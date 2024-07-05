@@ -16,6 +16,8 @@ function UnAuthHOC(WrappedComponent: React.FC) {
       getSessionCache()
       .then(session=>{
         if(session?.user){
+          console.log(session);
+          
           setSession(session)
           if(pathname.includes("signin") || pathname.includes("signup")){
             router.replace("/")
@@ -42,7 +44,42 @@ function UnAuthHOC(WrappedComponent: React.FC) {
     if(loading){
         return (
           <div className="d-flex justify-content-center align-items-center">
-            <Spin />;
+            <Spin />
+          </div>
+        )        
+    }
+    if(session?.user || !loading){
+      return <WrappedComponent {...props} />
+    }
+  }
+  return Auth
+}
+export function AuthHOC(WrappedComponent: React.FC) {
+  const Auth =(props:any)=>{
+    const [session, setSession] = useState<DefaultSessionLocal>()
+    const [loading, setLoading] = useState<boolean>(true)
+    const pathname = usePathname()
+    
+    const router= useRouter()
+    useEffect(()=>{
+      getSessionCache()
+      .then(session=>{
+        if(session?.user){
+          setSession(session)
+          setLoading(false)
+        }else{
+          router.replace("/auth/signin")
+        }
+      })
+      .catch(()=>{
+        router.replace("/auth/signin")
+      })
+      .finally()
+    },[])
+    if(loading){
+        return (
+          <div className="d-flex justify-content-center align-items-center p-5">
+            <Spin />
           </div>
         )        
     }

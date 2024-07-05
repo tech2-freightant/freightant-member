@@ -1,6 +1,6 @@
 "use client"
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Form, Input, Button, Checkbox, Space, Divider } from 'antd';
+import { Form, Input, Button, Checkbox, Space, Divider, message } from 'antd';
 import { assetsRootPath } from '@/components/utils';
 import FormItem from 'antd/es/form/FormItem';
 import Password from 'antd/es/input/Password';
@@ -9,23 +9,41 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Title from 'antd/es/typography/Title';
 import { useRouter } from 'next/navigation';
+import UnAuthHOC from '@/components/supportcomponents/auth/UnAuthHOC';
+import { signUPEndPoint } from '@/network/endpoints';
+import { SignUPType } from '@/types/defaults';
 
 const {useForm} = Form
 
 const SignUpUI = () => {
     const router = useRouter()
     const [form] = useForm()
-    const joinAs = useWatch("joinAs",{form,preserve: true,})
+    const role = useWatch("role",{form,preserve: true,})
     const [steps, setSteps] = useState<number>(0)
 
     const handleClick = (value:String) => {
-        form.setFieldValue("joinAs", value)
+        form.setFieldValue("role", value)
     };
-    const handleFinish=()=> { 
-      setSteps(i=>i+1)
-      router.push("?user="+(Math.random()*10000).toFixed(0))
+    const handleFinish=(value:SignUPType)=> { 
+      signUPEndPoint(value)
+      .then(r=>{
+        if(r.code){
+
+        }else{ message.error(r?.message)}
+      })
+      .catch(r=>{
+        console.log(r.message);
+        
+      })
+      // setSteps(i=>i+1)
 
     }
+    useEffect(()=>{
+      if(!role){
+        form.setFieldValue("role","exporter/importer")
+      }
+      
+    },[])
     
   return (
     <motion.div
@@ -40,24 +58,24 @@ const SignUpUI = () => {
       {steps===0&&<div className="freightant-login">
       <h3>Sign Up</h3>
       <Form layout="vertical" form={form} onFinish={handleFinish}>
-        <FormItem className='mb-2' label="Full Name">
+        <FormItem className='mb-2' label="Full Name" name={"fullName"} rules={[{required:true,message:"Field Required"}]}>
           <Input placeholder="Enter your full name" />
         </FormItem>
-        <FormItem className='mb-2' label="Business Email">
+        <FormItem className='mb-2' label="Business Email" name={"businessEmail"} rules={[{required:true,message:"Field Required"}]}>
           <Input placeholder="Enter your business email" />
         </FormItem>
-        <FormItem className='mb-2' label="Password">
+        <FormItem className='mb-2' label="Password" name={"password"} rules={[{required:true,message:"Field Required"}]}>
           <Password placeholder="Enter a password" />
         </FormItem>
         <FormItem className='mb-2' label="Phone Number">
           <Input placeholder="Enter your phone number" />
         </FormItem>
-        <FormItem className='mb-2' label="Join As">
+        <FormItem className='mb-2' label="Join As" name={"role"} rules={[{required:true,message:"Field Required"}]}>
             <Space>
-                <Button type={joinAs==="EI"?"primary":"default"} onClick={() => handleClick('EI')}>
+                <Button type={role==="exporter/importer"?"primary":"default"} onClick={() => handleClick('exporter/importer')}>
                     Exporter/ Importer
                 </Button>
-                <Button type={joinAs==="FF"?"primary":"default"} onClick={() => handleClick('FF')}>
+                <Button type={role==="FF"?"primary":"default"} onClick={() => handleClick('FF')}>
                     Freight Forwarder
                 </Button>
             </Space>
@@ -82,7 +100,7 @@ const SignUpUI = () => {
   );
 };
 
-export default SignUpUI;
+export default UnAuthHOC(SignUpUI);
 
 const SignUpOTPUI:React.FC<{setSteps:Dispatch<SetStateAction<number>>}> =({setSteps}) =>{
   const [otp, setotp] = useState<String>("")

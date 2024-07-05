@@ -50,12 +50,12 @@ const AuthCarousel: React.FC = () => {
         "components": {
           "Carousel": {
             "colorBgContainer": "rgb(106, 55, 244)",
-            "dotWidth": 40,
-            "dotActiveWidth": 48
+            "dotWidth": 36,
+            "dotActiveWidth": 52
           }
         }
       }}>
-        <Carousel autoplay>
+        <Carousel autoplay easing="ease-in-out" speed={700}>
         {slides.map((slide) => (
             <div key={slide.title} className="carousel-slide overflow-hidden mx-0" style={{borderEndStartRadius:"60px",borderTopRightRadius:"60px" }}>
             <div

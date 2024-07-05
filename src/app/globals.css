@@ -108,3 +108,12 @@ a {
 .text-primary2{
   color: #0A0049;
 }
+.bg-primary2{
+  color: #0A0049;
+}
+.bg-shade{
+  color: #F3F6FF;
+}
+.upload-0 > .ant-upload-select{
+  display: block !important;
+}
