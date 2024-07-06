@@ -46,6 +46,15 @@ export const signUPEndPoint2 = async(v:signupType2) =>{
     .catch((error:any) =>({message:error.response.data.message,code:false}) 
     )
 }
+export const signUPEndPoint3 = async(v:any) =>{
+    let user = await getSessionCache()  
+    console.log(user);
+    
+    return instance.put("user/signup/p3",v,{headers:{Authorization: "Bearer " + user?.user?.email,"Content-Type":"multipart/form-data"}})
+    .then(r=>({data:r.data,code:true,message:""}))
+    .catch((error:any) =>({message:error.response.data.message,code:false}) 
+    )
+}
 export const loginEndPoint = async({
   businessEmail,
   password,

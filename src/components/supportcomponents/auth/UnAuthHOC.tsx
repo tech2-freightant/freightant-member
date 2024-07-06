@@ -1,5 +1,6 @@
 "use client"
 import { DefaultSessionLocal, getSessionCache } from '@/network/endpoints'
+import instance from '@/network/instance'
 import { Spin } from 'antd'
 import { useSession } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
@@ -62,6 +63,7 @@ export function AuthHOC(WrappedComponent: React.FC) {
     
     const router= useRouter()
     useEffect(()=>{
+      
       getSessionCache()
       .then(session=>{
         if(session?.user){

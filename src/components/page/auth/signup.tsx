@@ -1,8 +1,7 @@
 "use client"
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Form, Input, Button, Checkbox, Space, Divider, message } from 'antd';
-import { assetsRootPath } from '@/components/utils';
-import FormItem from 'antd/es/form/FormItem';
+import { Form, Input, Button, Checkbox, Space, Divider, message, Row, Col, Select } from 'antd';
+import { assetsRootPath, errorMessage, validateMessages } from '@/components/utils';
 import Password from 'antd/es/input/Password';
 import {  useWatch } from 'antd/es/form/Form';
 import Link from 'next/link';
@@ -15,11 +14,32 @@ import { SignUPType } from '@/types/defaults';
 
 const {useForm} = Form
 
+
+
 const SignUpUI = () => {
     const router = useRouter()
     const [form] = useForm()
     const role = useWatch("role",{form,preserve: true,})
     const [steps, setSteps] = useState<number>(0)
+
+    const [countryList, setCountryList] = useState()
+
+    // Simulate fetching country options (replace with actual API call)
+    useEffect(() => {
+        const fetchCountries = async () => {
+            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags'); // Replace with your API endpoint
+            const countries = await response.json();
+            setCountryList(countries.map((country: any) => ({
+                label: country.name.official,
+                value: country.name.official,
+                emoji: country.flags.png,
+                desc: country.name.common,
+            })));
+
+
+        };
+        fetchCountries();
+    }, []);
 
     const handleClick = (value:String) => {
         form.setFieldValue("role", value)
@@ -28,15 +48,26 @@ const SignUpUI = () => {
       signUPEndPoint(value)
       .then(r=>{
         if(r.code){
-
-        }else{ message.error(r?.message)}
+          setSteps(i=>++i)
+          message.success("success")
+        }else{ 
+          if (r?.message === "User already exists") {
+            form.validateFields(["businessEmail"])
+            .then((values) => {
+              console.log('Email and Name validated:', values);
+            })
+            .catch((errorInfo) => {
+              console.error('Validation Failed:', errorInfo);
+            });
+          }else{
+            message.error(r?.message)
+          }
+        }
       })
       .catch(r=>{
         console.log(r.message);
         
       })
-      // setSteps(i=>i+1)
-
     }
     useEffect(()=>{
       if(!role){
@@ -53,24 +84,43 @@ const SignUpUI = () => {
     >
     <div className="signup-form">
       <div className="freightant-logo d-flex justify-content-center my-2 mb-3">
-        <img src={assetsRootPath +"image/logos/vector.png"} alt="Freightant Logo" width={"70%"} height={"50"} />
+        <img src={assetsRootPath +"image/logos/vector.png"} alt="Freightant Logo" height={"50"} />
       </div>
       {steps===0&&<div className="freightant-login">
-      <h3>Sign Up</h3>
-      <Form layout="vertical" form={form} onFinish={handleFinish}>
-        <FormItem className='mb-2' label="Full Name" name={"fullName"} rules={[{required:true,message:"Field Required"}]}>
+      <h3 className="text-center">Sign Up</h3>
+      <Form validateMessages={validateMessages} layout="vertical" form={form} onFinish={handleFinish}>
+        <Form.Item className='mb-2' label="Full Name" name={"fullName"} rules={[{required:true}]}>
           <Input placeholder="Enter your full name" />
-        </FormItem>
-        <FormItem className='mb-2' label="Business Email" name={"businessEmail"} rules={[{required:true,message:"Field Required"}]}>
+        </Form.Item>
+        <Form.Item className='mb-2' label="Business Email" name={"businessEmail"} rules={[{required:true}]}>
           <Input placeholder="Enter your business email" />
-        </FormItem>
-        <FormItem className='mb-2' label="Password" name={"password"} rules={[{required:true,message:"Field Required"}]}>
+        </Form.Item>
+        <Form.Item className='mb-2' label="Password" name={"password"} rules={[{required:true}]}>
           <Password placeholder="Enter a password" />
-        </FormItem>
-        <FormItem className='mb-2' label="Phone Number">
-          <Input placeholder="Enter your phone number" />
-        </FormItem>
-        <FormItem className='mb-2' label="Join As" name={"role"} rules={[{required:true,message:"Field Required"}]}>
+        </Form.Item>
+        <Row gutter={[16,0]}>
+          <Col>
+            <Form.Item className='mb-2' name={"countryCode"} label="Enter Phone number" rules={[{required:true,}]}>
+              <Select
+                  showSearch
+                  allowClear
+                  options={countryList}
+                  optionRender={(option) => (
+                      <Space>
+                          <img src={option.data.emoji} width={20} height={20} />
+                          {option.data.desc}
+                      </Space>
+                  )}
+              />
+            </Form.Item>
+          </Col>
+          <Col>
+            <Form.Item className='mb-2' name={"phone"} rules={[{required:true,}]}>
+              <Input placeholder="Enter your phone number" />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Form.Item className='mb-2' label="Join As" name={"role"} rules={[{required:true}]}>
             <Space>
                 <Button type={role==="exporter/importer"?"primary":"default"} onClick={() => handleClick('exporter/importer')}>
                     Exporter/ Importer
@@ -79,11 +129,15 @@ const SignUpUI = () => {
                     Freight Forwarder
                 </Button>
             </Space>
-        </FormItem>
-        <FormItem>
-          <Checkbox>I agree to all Terms & Conditions</Checkbox>
-        </FormItem>
-        <Button htmlType="submit" type="primary" block shape="round">Sign Up</Button>
+        </Form.Item>
+        <Form.Item name={"TOC"} rules={[{required:true , message:"Accept Terms and Conditions"}]}>
+          <Checkbox.Group>
+            <Checkbox>I agree to all Terms & Conditions</Checkbox>
+          </Checkbox.Group>
+        </Form.Item>
+        <Form.Item >
+          <Button htmlType="submit" type="primary" block shape="round">Sign Up</Button>
+        </Form.Item>
       </Form>
       <Divider>or</Divider>
         <p>

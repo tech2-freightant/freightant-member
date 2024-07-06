@@ -15,11 +15,16 @@ const handler = NextAuth({
               console.log(credentials);
               if(credentials?.email && credentials?.password){                
                 const res = await loginEndPoint({businessEmail:credentials?.email, password:credentials?.password})
+                console.log(res);
                 
                 if (res.code ) {
                   return { id:"",email: res.data.token}
+                }else{
+                  throw new Error(res?.message);
                 }
               }
+
+              
               return null
             }
           })

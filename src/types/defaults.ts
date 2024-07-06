@@ -2,6 +2,7 @@ export type SignUPType = {
     fullName:string,
     businessEmail:string,
     password:string,
+    phone:string,
     role:string,
 }
 export type loginType = {

@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import"bootstrap/dist/css/bootstrap.min.css";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider } from "antd";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Montserrat({
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,11 +23,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <AntdRegistry>
           <ConfigProvider theme={
             {
               "token": {
+                fontFamily:inter.style.fontFamily,
                 "colorPrimary": "#6a37f4",
                 "colorInfo": "#6a37f4"
               }
