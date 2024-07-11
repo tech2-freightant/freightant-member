@@ -11,7 +11,7 @@ import UnAuthHOC, { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHO
 import { useWatch } from 'antd/es/form/Form';
 import FormItem from 'antd/es/form/FormItem';
 
-const OnPageUI = () => {
+const ExportImportUI = () => {
     const [currentStep, setCurrentStep] = useState<number>(0)
 
     return (
@@ -23,15 +23,15 @@ const OnPageUI = () => {
                 <KYCUploadForm setCurrentStep={setCurrentStep} />
             </div>
             <div className={currentStep === 2 ? "" : "d-none"}>
-                <BranchDetailsForm setCurrentStep={setCurrentStep} />
+                <BranchDetailsForm setCurrentStep={setCurrentStep} title={"Branch Details - Exporter/Importer"} />
             </div>
         </OnboardUserUI>
     )
 }
 
-export default AuthHOC(OnPageUI)
+export default AuthHOC(ExportImportUI)
 
-const SideUI = ({ step }: { step: number }) => {
+export const SideUI = ({ step }: { step: number }) => {
     return (
         <div className='p-1 p-md-3'>
             <div className="d-none d-md-block freightant-logo d-flex justify-content-center my-2 mb-5">
@@ -77,29 +77,20 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                 desc: country.name.common,
             })));
 
-
         };
         fetchCountries();
     }, []);
 
     const onFinish = (values: any) => {
-        setCurrentStep(i => ++i)
-        console.log('Success:', values);
         signUPEndPoint2(values)
             .then(r => {
-                console.log(r);
-
+                if(r.code){
+                    setCurrentStep(i => ++i)
+                }
             })
             .catch(r => {
                 console.log(r);
-
             })
-        // Submit form data to your backend here
-    };
-
-    const onFinishFailed = (errorInfo: any) => {
-        console.log('Failed:', errorInfo);
-        setCurrentStep(i => ++i)
     };
 
     const layout = {
@@ -111,18 +102,18 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
             layout='vertical'
             form={form}
             onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
             autoComplete="off"
+            validateMessages={validateMessages}
         >
             <h3 className="text-primary2 fw-bolder mb-5">KYC Details - Exporter / Importer - India</h3>
             <Row gutter={[16, 8]} justify={"center"}>
                 <Col xs={22} md={24}>
-                    <Form.Item label="Company Name" className='col-12 col-md-8' required name="companyName" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Company Name" className='col-12 col-md-8' required name="companyName" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
                 <Col xs={22} md={24}>
-                    <Form.Item label="Business Type" name="businessType" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Business Type" name="businessType" rules={[{ required: true,  }]}>
                         <Radio.Group>
                             <Radio value="Manufacturer">Manufacturer</Radio>
                             <Radio value="Trader">Trader</Radio>
@@ -141,7 +132,7 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Country" name="country" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Country" name="country" rules={[{ required: true,  }]}>
                         <Select
                             showSearch
                             allowClear
@@ -156,17 +147,17 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="State" name="state" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="State" name="state" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="City" name="city" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="City" name="city" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="pincode" name="pincode" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="pincode" name="pincode" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
@@ -176,13 +167,13 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Website" name="website" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Website" name="website" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Name [Point of Contact / EXIM / Logistics Team]" required name="contactpersonName" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Name [Point of Contact / EXIM / Logistics Team]" required name="contactpersonName" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
@@ -192,43 +183,43 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Mobile No [Point of Contact / EXIM / Logistics Team]" required name="mobileNumber" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Mobile No [Point of Contact / EXIM / Logistics Team]" required name="mobileNumber" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Year of Company Incorporation" required name="yearOfIncorporation" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Year of Company Incorporation" required name="yearOfIncorporation" rules={[{ required: true,  }]}>
                         <Input type="number" />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Annual Turnover in Last FY" name="annualTurnover" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Annual Turnover in Last FY" name="annualTurnover" rules={[{ required: true,  }]}>
                         <Input addonAfter="₹" />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Annual Volume (TEUs) by Ocean in Last FY" name="annualVolumeTuesByOcean" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Annual Volume (TEUs) by Ocean in Last FY" name="annualVolumeTuesByOcean" rules={[{ required: true,  }]}>
                         <Input type="number" addonAfter="TEUs" />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Annual Volume (MT) by Air in Last FY" name="annualVolumeMTByAir" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Annual Volume (MT) by Air in Last FY" name="annualVolumeMTByAir" rules={[{ required: true,  }]}>
                         <Input type="number" addonAfter="MT" />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Escalation/Emergency Contact Numbers" name="emergencyContactNumber" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Escalation/Emergency Contact Numbers" name="emergencyContactNumber" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Escalation/Emergency Email IDs" name="emergencyContactEmail" rules={[{ required: true, message: "Field Required" }]}>
+                    <Form.Item label="Escalation/Emergency Email IDs" name="emergencyContactEmail" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
@@ -252,26 +243,22 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
 
     const onFinish = (values: any) => {
         console.log('Success:', values);
-        setCurrentStep(i=>++i)
+        // setCurrentStep(i=>++i)
         let a:any = {}
         Object.keys(values).forEach(key=>{
             a[key] = values[key]?.file?values[key]?.file.originFileObj:values[key]
         })
-        console.log(a);
-        
         signUPEndPoint3(a)
         .then(r=>{
             console.log(r);
-            
         })
         .catch(r=>{
             console.log("err ",r);
-            
         })
     };
     
     const onFinishFailed = (errorInfo: any) => {
-        setCurrentStep(i=>++i)
+        // setCurrentStep(i=>++i)
         console.log('Failed:', errorInfo);
     };
 
@@ -367,20 +354,22 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 </Col>
             </Row>
 
-            <Row gutter={[48, 0]}>
-                <Col {...responsiveItemLayout} >
-                    <Form.Item label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
-                        <Select options={[]} />
-                    </Form.Item>
-                </Col>
-                <Col {...responsiveItemLayout} >
-                    <Form.Item label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
-                        <Upload {...uploadProps} className="upload-0">
-                            <Button block icon={<InboxOutlined />}>Click to upload</Button>
-                        </Upload>
-                    </Form.Item>
-                </Col>
-            </Row>
+            <FormItem label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
+                <Row gutter={[48, 0]}>
+                    <Col {...responsiveItemLayout} >
+                        <Form.Item >
+                            <Select options={indianExportOrganizations.map(i=>({key:i,label:i,value:i}))} />
+                        </Form.Item>
+                    </Col>
+                    <Col {...responsiveItemLayout} >
+                        <Form.Item >
+                            <Upload {...uploadProps} className="upload-0">
+                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                            </Upload>
+                        </Form.Item>
+                    </Col>
+                </Row>
+            </FormItem>
             <Row gutter={[48, 0]}>
                 <Col span={24} >
                     <Form.Item name={"AEO"} label="AEO Certificate">
@@ -439,17 +428,17 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
     )
 }
 
-const BranchDetailsForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<number>> }) => {
+export  const BranchDetailsForm = ({ setCurrentStep,title }: { setCurrentStep: Dispatch<SetStateAction<number>>,title:string }) => {
     const [formData, setFormData] = useState([{ key: 0 }]); // Initial state with one branch
   
     return (
-      <Form layout="vertical" initialValues={{"branches":[{"city":""}]}}>
-        <h3 style={{ textAlign: 'center' }}>Branch Details - Exporter/Importer</h3>
+      <Form layout="vertical" initialValues={{"branches":[{"city":""}]}} validateMessages={validateMessages}>
+        <h3 className={`text-primary2`}>{title}</h3>
         <Form.List name="branches">
           {(fields, { add, remove }) => (
             <>
-              {fields.map((field) => (
-                <Card key={field.key+1} title={`Branch ${field.key}`} className='my-2' extra={field.key>0&&<Button onClick={()=>remove(field.key)} shape="round">Delete <span className='text-danger'>X</span> </Button>}>
+              {fields.map((field,index) => (
+                <Card key={field.key+1} title={`Branch ${field.key+1}`} className='my-2' extra={field.key>0&&<Button onClick={()=>remove(field.key)} shape="round">Delete <span className='text-danger'>X</span> </Button>}>
                   
                   <Row gutter={16}>
                     <Col {...responsiveItemLayout}>
@@ -457,6 +446,7 @@ const BranchDetailsForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetSta
                         {...field}
                         name={[field.name, 'stateProvince']}
                         label="Select Branch State/Province"
+                        rules={[{required:true}]}
                       >
                         <Select>
                           <Select.Option value="IN-MH">Maharashtra</Select.Option>
@@ -470,31 +460,30 @@ const BranchDetailsForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetSta
                         {...field}
                         name={[field.name, 'city']}
                         label="Select Branch City"
+                        rules={[{required:true}]}
                       >
                         <Select>
                           <Select.Option value="city1">Select here</Select.Option>
                           {/* Add more options as needed */}
                         </Select>
                       </FormItem>
-                    </Col>
-                  </Row>
-                  <Row gutter={16}>
-                    <Col span={24}>
+                    </Col>                  
+                    <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
                         name={[field.name, 'address']}
                         label="Branch Address"
+                        rules={[{required:true}]}
                       >
                         <Input.TextArea placeholder="Enter Address" />
                       </FormItem>
                     </Col>
-                  </Row>
-                  <Row gutter={16}>
                     <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
                         name={[field.name, 'contactName']}
                         label="Name [Point of Contact/EXIM/Logistics Team]"
+                        rules={[{required:true}]}
                       >
                         <Input placeholder="Enter Name" />
                       </FormItem>
@@ -503,24 +492,30 @@ const BranchDetailsForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetSta
                       <FormItem
                         {...field}
                         name={[field.name, 'email']}
+                        rules={[
+                            {type:"email",message:"Please enter a valid email address"},
+                            {required:true}
+                        ]}
                         label="Email ID [Point of Contact/EXIM/Logistics Team]"
                       >
                         <Input type="email" placeholder="Enter Email" />
                       </FormItem>
                     </Col>
-                  </Row>
-                  <Row gutter={16}>
                     <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
                         name={[field.name, 'mobileNo']}
                         label="Mobile No [Point of Contact/EXIM/Logistics Team]"
+                        rules={[
+                            {min:10,max:10,message: 'Please enter correct number'},
+                            {required:true}
+                        ]}
                       >
                         <Input placeholder="Enter Mobile No" />
                       </FormItem>
                     </Col>
                   </Row>
-                    {fields.length===field.key+1&&<Button shape="round" onClick={add}>
+                    {fields.length===index+1&&<Button shape="round" onClick={add}>
                       Add Branch
                     </Button>}
                 </Card>
@@ -536,10 +531,52 @@ const BranchDetailsForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetSta
     );
   };
 
-  const responsiveItemLayout = {
+export   const responsiveItemLayout = {
     xs: 24,
     sm: 24,
     md: 12,
     lg: 12,
     xl: 12,
 };
+
+const indianExportOrganizations = [
+    "Apparel Export Promotion Council",
+    "Basic Chemicals, Pharmaceuticals & Cosmetics EPC (CHEMEXCIL)",
+    "Carpet Export Promotion Council",
+    "Cashew Export Promotion Council of India",
+    "CAPEXIL",
+    "Cotton Textiles Export Promotion Council",
+    "Council for Leather Exports",
+    "EEPC INDIA (Formerly Engineering Export Promotion Council)",
+    "Electronics & Computer Software EPC",
+    "Export Promotion Council for Handicrafts",
+    "Export Promotion Council for EOUS & SEZS",
+    "Federation of Indian Export Organisations (FIEO)",
+    "Gem & Jewellery Export Promotion Council (CJEPC)",
+    "Handloom Export Promotion Council",
+    "Indian Oilseeds & Produce Export Promotion Council",
+    "Indian Silk Export Promotion Council",
+    "Jute Products Development and Export Promotion Council (JPDEPC)",
+    "Pharmaceuticals Export Promotion Council",
+    "Plastics Export Promotion Council",
+    "Powerloom Development & Export Promotion Council",
+    "Project Exports Promotion Council of India",
+    "Services Export Promotion Council (SEPC)",
+    "Shellac & Forest Products Export Promotion Council",
+    "Sports Goods Export Promotion Council (SQEPC)",
+    "Synthetic & Rayon Textiles Export Promotion Council",
+    "Telecom Equipment and Services Export Promotion Council (TEPC)",
+    "Wool Industry Export Promotion Council",
+    "Wool & Woollens Export Promotion Council",
+    "Coffee Board",
+    "Coir Board",
+    "Rubber Board",
+    "Spices Board",
+    "Tea Board",
+    "Tobacco Board",
+    "Agricultural and Processed Food Products Export Development Authority (APEDA)",
+    "Coconut Development Board",
+    "Marine Products Export Development Authority (MPEDA)",
+    "Other"
+];
+  

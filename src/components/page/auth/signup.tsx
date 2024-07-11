@@ -1,16 +1,18 @@
 "use client"
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Form, Input, Button, Checkbox, Space, Divider, message, Row, Col, Select } from 'antd';
+import { Form, Input, Button, Checkbox, Space, Divider, message, Row, Col, Select, Typography } from 'antd';
 import { assetsRootPath, errorMessage, validateMessages } from '@/components/utils';
 import Password from 'antd/es/input/Password';
-import {  useWatch } from 'antd/es/form/Form';
+import {  FormInstance, useWatch } from 'antd/es/form/Form';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Title from 'antd/es/typography/Title';
 import { useRouter } from 'next/navigation';
 import UnAuthHOC from '@/components/supportcomponents/auth/UnAuthHOC';
-import { signUPEndPoint } from '@/network/endpoints';
-import { SignUPType } from '@/types/defaults';
+import { registerOtp, signUPEndPoint, verifyOtp } from '@/network/endpoints';
+import { SignUPType, signupotp } from '@/types/defaults';
+import instance from '@/network/instance';
+import { signIn } from 'next-auth/react';
 
 const {useForm} = Form
 
@@ -21,19 +23,21 @@ const SignUpUI = () => {
     const [form] = useForm()
     const role = useWatch("role",{form,preserve: true,})
     const [steps, setSteps] = useState<number>(0)
-
+    const [token, setToken] = useState(null)
     const [countryList, setCountryList] = useState()
+    const [formloading, setFormLoading] = useState(false)
+    const [formValue, setFormValue] = useState({})
 
     // Simulate fetching country options (replace with actual API call)
     useEffect(() => {
         const fetchCountries = async () => {
-            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags'); // Replace with your API endpoint
+            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags,idd'); // Replace with your API endpoint
             const countries = await response.json();
             setCountryList(countries.map((country: any) => ({
-                label: country.name.official,
-                value: country.name.official,
+                label: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}`,
+                value: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}`,
                 emoji: country.flags.png,
-                desc: country.name.common,
+                desc: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}`,
             })));
 
 
@@ -44,30 +48,23 @@ const SignUpUI = () => {
     const handleClick = (value:String) => {
         form.setFieldValue("role", value)
     };
-    const handleFinish=(value:SignUPType)=> { 
-      signUPEndPoint(value)
+    const handleFinish=(value:SignUPType)=> {
+      setFormLoading(true);
+      setFormValue(value);
+      registerOtp(value.businessEmail)
       .then(r=>{
         if(r.code){
+          setToken(r.data.token)
           setSteps(i=>++i)
-          message.success("success")
-        }else{ 
-          if (r?.message === "User already exists") {
-            form.validateFields(["businessEmail"])
-            .then((values) => {
-              console.log('Email and Name validated:', values);
-            })
-            .catch((errorInfo) => {
-              console.error('Validation Failed:', errorInfo);
-            });
-          }else{
-            message.error(r?.message)
-          }
+          message.success("OTP Sent")
+        }else{
+          message.error(r?.message)
         }
       })
       .catch(r=>{
-        console.log(r.message);
         
-      })
+      }).finally(()=>setFormLoading(false))
+      
     }
     useEffect(()=>{
       if(!role){
@@ -92,15 +89,43 @@ const SignUpUI = () => {
         <Form.Item className='mb-2' label="Full Name" name={"fullName"} rules={[{required:true}]}>
           <Input placeholder="Enter your full name" />
         </Form.Item>
-        <Form.Item className='mb-2' label="Business Email" name={"businessEmail"} rules={[{required:true}]}>
+        <Form.Item className='mb-2' label="Business Email" name={"businessEmail"}
+          rules={[
+            {type:"email",message:"Please enter a valid email address"},
+            {required:true},
+            {validator:(rule, value) =>{
+              try {   
+                if(!value.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)){
+                  return
+                }
+               return instance.post(`/user/userexist`,{businessEmail:value})
+               .then(r=>Promise.resolve())
+               .catch(err => Promise.reject("User Already Exist"))
+              }catch (error){
+                console.log("hi");
+                
+                return Promise.reject("User Already Exist")
+              }
+            }
+            },
+        ]}
+        >
           <Input placeholder="Enter your business email" />
         </Form.Item>
-        <Form.Item className='mb-2' label="Password" name={"password"} rules={[{required:true}]}>
+        <Form.Item className='mb-2' label="Password" name={"password"} 
+          rules={[{required:true},
+            {
+              pattern:/^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[!&#$%\-_=+<>])([a-zA-Z0-9!#$%\-_=+<>]+)$/,
+              message: `Password should contain at least one lower case letter, upper case letter, number and special characters`
+           },
+           {min:8,max:16,message: "Passwords must be between 8 to 16 characters"}
+          ]}>
           <Password placeholder="Enter a password" />
         </Form.Item>
-        <Row gutter={[16,0]}>
-          <Col>
-            <Form.Item className='mb-2' name={"countryCode"} label="Enter Phone number" rules={[{required:true,}]}>
+          <Form.Item label="Enter Phone number">
+        <Row gutter={[8,0]}>
+          <Col span={8}>
+            <Form.Item className='mb-2' name={"countryCode"}  rules={[{required:true,}]}>
               <Select
                   showSearch
                   allowClear
@@ -114,12 +139,13 @@ const SignUpUI = () => {
               />
             </Form.Item>
           </Col>
-          <Col>
-            <Form.Item className='mb-2' name={"phone"} rules={[{required:true,}]}>
+          <Col span={16}>
+            <Form.Item className='mb-2' name={"phone"} rules={[{required:true},{min:10,max:10,message: 'Please enter correct number'}]}>
               <Input placeholder="Enter your phone number" />
             </Form.Item>
           </Col>
         </Row>
+          </Form.Item>
         <Form.Item className='mb-2' label="Join As" name={"role"} rules={[{required:true}]}>
             <Space>
                 <Button type={role==="exporter/importer"?"primary":"default"} onClick={() => handleClick('exporter/importer')}>
@@ -132,11 +158,11 @@ const SignUpUI = () => {
         </Form.Item>
         <Form.Item name={"TOC"} rules={[{required:true , message:"Accept Terms and Conditions"}]}>
           <Checkbox.Group>
-            <Checkbox>I agree to all Terms & Conditions</Checkbox>
+            <Checkbox value={"accept"}>I agree to all Terms & Conditions</Checkbox>
           </Checkbox.Group>
         </Form.Item>
         <Form.Item >
-          <Button htmlType="submit" type="primary" block shape="round">Sign Up</Button>
+          <Button htmlType="submit" loading={formloading} type="primary" block shape="round">Sign Up</Button>
         </Form.Item>
       </Form>
       <Divider>or</Divider>
@@ -147,8 +173,8 @@ const SignUpUI = () => {
           </Link>
         </p>
       </div>}
-      {steps===1&&<SignUpOTPUI setSteps={setSteps} />}
-      {steps===2&&<SignUpCongratsUI />}
+      {steps===1&&<SignUpOTPUI setSteps={setSteps} f={form} token={token} setToken={setToken} value={formValue} />}
+      {steps===2&&<SignUpCongratsUI f={formValue} />}
     </div>
     </motion.div>
   );
@@ -156,15 +182,63 @@ const SignUpUI = () => {
 
 export default UnAuthHOC(SignUpUI);
 
-const SignUpOTPUI:React.FC<{setSteps:Dispatch<SetStateAction<number>>}> =({setSteps}) =>{
+const SignUpOTPUI:React.FC<signupotp> =({setSteps,f,token,setToken,value}) =>{
   const [otp, setotp] = useState<String>("")
+  const [resentCounters, setResentCounters] = useState<number>(0)
+  const [formloading, setFormLoading] = useState(false)
+
+  const handleResendOTP = ()=>{
+    registerOtp(f.getFieldValue("businessEmail"))
+    .then(r=>{
+      if(r.code){
+        setToken(r.data.token)
+        message.success("New OTP Sent")
+      }else{
+        message.error(r?.message)
+      }
+    })
+  }
   const handleFinish = ()=>{
-    setSteps(i=>i+1)
+    setFormLoading(true)
+    verifyOtp(f.getFieldValue("businessEmail"),otp,token)
+    .then(r=>{
+      if(r.code){
+        signUPEndPoint(value)
+        .then(r=>{
+          if(r.code){
+            setSteps(i=>++i)
+          }else{         
+            message.error(r?.message)
+          }
+        })
+        .catch(r=>{
+          console.log(r.message);        
+        }).finally(()=>setFormLoading(false))
+      }
+    })
+    .catch(r=>{
+      console.log(r);
+    }).finally(()=>setFormLoading(false))
   } 
     useEffect(() => {
-      console.log(otp);
-      
-    }, [otp])
+      if(token){
+        setResentCounters(60)
+      }
+      return()=>{}
+    }, [token])
+    useEffect(() => {
+      let resent = setInterval(()=>{          
+        if(resentCounters>0){
+          setResentCounters(prev=>prev-1)
+        } else{
+          setResentCounters(0)
+          clearInterval(resent)
+        }
+      },1000)
+      return()=>{
+        clearInterval(resent)
+      }
+    },[resentCounters])
     
     return(
         <div>
@@ -177,13 +251,30 @@ const SignUpOTPUI:React.FC<{setSteps:Dispatch<SetStateAction<number>>}> =({setSt
                 <div className="my-4">
                     <Input.OTP length={6} onChange={i=>setotp(i)} />
                 </div>
-                <Button disabled={otp?.length<5} type="primary" block shape='round' className='col-12' onClick={handleFinish}>Verify Now</Button>
-                <Button type="link">Resend Code</Button>
+                <Button loading={formloading} disabled={otp?.length<5} type="primary" block shape='round' className='col-12 mb-2' onClick={handleFinish}>Verify Now</Button>
+                {resentCounters>0?
+                <Typography.Text className="text-muted">Resend OTP in {resentCounters} seconds</Typography.Text> :
+                <Button type="link" onClick={handleResendOTP}>Resend Code</Button>}
             </div>
         </div>
     )
 }
-const SignUpCongratsUI =() =>{
+const SignUpCongratsUI =({f}:{f:any}) =>{
+  const [loading,setLoading] = useState(true)
+  const router = useRouter()
+  const {businessEmail,password} = f
+
+    useEffect(() =>{
+      signIn("credentials",{email:businessEmail,password:password,redirect:false}).then((r)=> {  
+          if(r?.ok && r?.status!==401){
+              setLoading(false)
+          }else{
+              message.error(r?.error)
+          }
+      }).catch((err)=> {
+          console.log("err ", err.message);            
+      });
+    },[])
     return(
         <div className='my-5'>
             <motion.div
@@ -196,7 +287,7 @@ const SignUpCongratsUI =() =>{
             <div className="freightant-logo d-flex flex-column justify-content-center align-items-center my-2 mb-3">
                 <Title className='text-primary2 text-center' level={3}>Congratulations</Title>
                 <p className="text-mute text-center">Your email id is verified successfully . Continue to the application.</p>
-                <Button type="primary" block shape='round' className='col-12'>Continue</Button>
+                <Button disabled={loading} onClick={()=>router.replace("/onboarduser"+f.role==="FF"?"":"/exporter")} type="primary" block shape='round' className='col-12'>Continue</Button>
             </div>
         </div>
     )
@@ -204,16 +295,18 @@ const SignUpCongratsUI =() =>{
 
 const variants = {
     small: {
-      scale: 0.5, // Start small
-      rotate: 0, // No initial rotation
+      scale: 0.5,
+      rotate: 0,
+      opacity:0
     },
     big: {
-      scale: 1, // Grow to full size
-      rotate: 360, // Rotate 360 degrees
+      scale: 1,
+      rotate: 360,
+      opacity:1,
       transition: {
-        duration: 1, // Animation duration in seconds
-        ease: 'easeInOut', // Animation timing function
-        repeat: Infinity, repeatDelay: 1  // Repeat the animation indefinitely
+        duration: 1,
+        ease: 'easeInOut',
+        repeat: Infinity, repeatDelay: 1
       },
     },
   };

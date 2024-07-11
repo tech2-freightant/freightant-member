@@ -24,11 +24,6 @@ const SignInUI = () => {
             console.log("err ", err.message);            
         });
     }
-    useEffect(() => {
-        getSessionCache().then(session=>{
-            console.log(session);
-        })
-    },[])
     return (
         <motion.div
             initial={{ opacity: 0 }}

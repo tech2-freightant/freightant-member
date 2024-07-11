@@ -15,12 +15,9 @@ let user: DefaultSessionLocal = {}
 
 export const getSessionCache= async()=>{
     if(user?.user?.name){
-      console.log("hi");
-      
         return user
     }
     let tmp = await getSession()
-    console.log("h",tmp);
     
     user = {user:tmp?.user,expires: tmp?.expires}
     return user
@@ -39,7 +36,6 @@ export const signUPEndPoint = async({
 }
 export const signUPEndPoint2 = async(v:signupType2) =>{
     let user = await getSessionCache()  
-    console.log(user);
     
     return instance.put("user/signup/p2",v,{headers:{Authorization: "Bearer " + user?.user?.email}})
     .then(r=>({data:r.data,code:true,message:""}))
@@ -48,7 +44,6 @@ export const signUPEndPoint2 = async(v:signupType2) =>{
 }
 export const signUPEndPoint3 = async(v:any) =>{
     let user = await getSessionCache()  
-    console.log(user);
     
     return instance.put("user/signup/p3",v,{headers:{Authorization: "Bearer " + user?.user?.email,"Content-Type":"multipart/form-data"}})
     .then(r=>({data:r.data,code:true,message:""}))
@@ -63,4 +58,16 @@ export const loginEndPoint = async({
     .then(r=>({data:r.data,code:true,message:""}))
     .catch((error:any) =>({message:error.response.data.message,code:false,data:null}) 
     )
+}
+
+export const registerOtp = async(businessEmail:string) =>{
+    return instance.post("otp/registerotp",{businessEmail})
+    .then(r=>({data:r.data.data,code:true,message:""}))
+    .catch((error:any) =>({message:error.response.data.message,code:false,data:null}))
+}
+
+export const verifyOtp = async(businessEmail:string,otp:String,token:String) =>{
+    return instance.post("otp/otpverify",{businessEmail,otp,token})
+    .then(r=>({data:r.data.data,code:true,message:""}))
+    .catch((error:any) =>({message:error.response.data.message,code:false,data:null}))
 }

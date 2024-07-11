@@ -1,9 +1,9 @@
-import OnPageUI from '@/components/page/onboarduser/exportImport'
+import Freightforwader from '@/components/page/onboarduser/freightforwader'
 import React from 'react'
 
-function Page() {
+function Page(){
   return (
-    <OnPageUI />
+    <Freightforwader />
   )
 }
 
