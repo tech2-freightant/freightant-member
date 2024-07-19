@@ -14,7 +14,7 @@ import { FormRules, strings } from '@/components/strings'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function Freightforwader() {
-    const [currentStep, setCurrentStep] = useState<number>(1)
+    const [currentStep, setCurrentStep] = useState<number>(0)
 
     return (
         <OnboardUserUI sideUI={<SideUI step={currentStep} />}>
