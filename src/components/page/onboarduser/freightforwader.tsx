@@ -5,10 +5,16 @@ import { BranchDetailsForm, SideUI, responsiveItemLayout } from './exportImport'
 import { Button, Card, Checkbox, Col, DatePicker, Form, FormInstance, Input, Radio, Row, Select, Space, Upload, message } from 'antd'
 import { InboxOutlined, UploadOutlined } from '@ant-design/icons'
 import { validateMessages } from '@/components/utils'
-import { signUPEndPoint2, signUPEndPoint3 } from '@/network/endpoints'
+import { getCountry, getSessionCache, signUPEndPoint2, signUPEndPoint3, uploadFile } from '@/network/endpoints'
+import { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC'
+import StateSelect, { CitySelect } from '@/components/supportcomponents/customcomponents/stateselect'
+import { useWatch } from 'antd/es/form/Form'
+import { CountryListType } from '@/types/defaults'
+import { FormRules, strings } from '@/components/strings'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 function Freightforwader() {
-    const [currentStep, setCurrentStep] = useState<number>(2)
+    const [currentStep, setCurrentStep] = useState<number>(1)
 
     return (
         <OnboardUserUI sideUI={<SideUI step={currentStep} />}>
@@ -20,54 +26,75 @@ function Freightforwader() {
                 {/* <KYCUploadForm setCurrentStep={setCurrentStep} /> */}
             </div>
             <div className={currentStep === 2 ? "" : "d-none"}>
-                <BranchDetailsForm setCurrentStep={setCurrentStep} title={"Branch Details - Freight Forwarder"} />
+                <BranchDetailsForm currentStep={currentStep} setCurrentStep={setCurrentStep} title={"Branch Details - Freight Forwarder"} />
             </div>
         </OnboardUserUI>
   )
 }
 
-export default Freightforwader
+export default AuthHOC(Freightforwader)
 
 const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<number>> }) => {
-  const [form] = Form.useForm();
-  const [countryList, setCountryList] = useState()
+  const {push} = useRouter()
+    const [form] = Form.useForm();
+  const [countryList, setCountryList] = useState<CountryListType[]>([])
+
+  const [countryId, setCountryId] = useState("")
+  const [stateId, setStateId] = useState("")
+  const [Currency, setCurrency] = useState("₹")
+  const handleCountrySelect=(e:any)=>{
+    setCountryId((countryList?countryList:[]).filter((state:any) => state.desc === e)[0].id)
+    setCurrency((countryList?countryList:[]).filter((state:any) => state.desc === e)[0].currency_symbol)
+  }
 
   // Simulate fetching country options (replace with actual API call)
   useEffect(() => {
       const fetchCountries = async () => {
-          const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags'); // Replace with your API endpoint
-          const countries = await response.json();
+          const response = await getCountry() // Replace with your API endpoint
+          const countries = await response.data;
+          
           setCountryList(countries.map((country: any) => ({
-              label: country.name.official,
-              value: country.name.common,
-              emoji: country.flags.png,
-              desc: country.name.common,
+              desc: country.name,
+              value: country.name,
+              ...country
           })));
 
 
       };
       fetchCountries();
   }, []);
-
   const onFinish = (values: any) => {
-      setCurrentStep(i => ++i)
-      console.log('Success:', values);
+        let errors:string[] = []
+      values.emergencyContactEmail.forEach((element:string) => {
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(element)){
+          errors.push("Invalid Email")
+        }
+      });
+      values.emergencyContactNumber.forEach((element:string) => {
+        if(!/^\d{10}$/.test(element)){
+          errors.push("Invalid Phone Number")
+        }
+      })
+      if(errors.length>0){
+        errors.forEach((i=>message.error(i)))
+        return
+      }
+      
       signUPEndPoint2(values)
-          .then(r => {
-              console.log(r);
-
-          })
-          .catch(r => {
-              console.log(r);
-
-          })
-      // Submit form data to your backend here
+        .then(r => {
+            if(r.code){
+                if(+countryId!==101){
+                    push("?global="+values.country)
+                }
+                setCurrentStep(i => ++i)
+            }
+        })
+        .catch(r => {
+            console.log(r);
+        })
   };
 
-  const onFinishFailed = (errorInfo: any) => {
-      console.log('Failed:', errorInfo);
-      setCurrentStep(i => ++i)
-  };
+  const onFinishFailed = (errorInfo: any) => {};
 
   const layout = {
   };
@@ -80,8 +107,9 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           autoComplete="off"
+          validateMessages={validateMessages}
       >
-          <h3 className="text-primary2 fw-bolder mb-5">KYC Details - Freight forwarder - India</h3>
+          <h3 className="text-primary2 fw-bolder mb-5">KYC Details - Freight forwarder - {+countryId===101?"India":"Global"}</h3>
           <Row gutter={[16, 8]} justify={"center"}>
               <Col xs={22} md={24}>
                   <Form.Item label="Company Name" className='col-12 col-md-8' required name="companyName" rules={[{ required: true, message: "Field Required" }]}>
@@ -89,44 +117,43 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                   </Form.Item>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="IEC Code" required name="iecCode" >
-                      <Input />
-                  </Form.Item>
+                  <CustomFormUpload name={"companyLogo"} style label={"Upload Company Logo"} f={form} />
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-
-                  <Form.Item label="GST Number" name="gstNumber">
-                      <Input />
-                  </Form.Item>
+                  {+countryId===101?
+                    <Form.Item label="GST Number" name="gst" rules={[{required:true}]}>
+                        <Input />
+                    </Form.Item>:
+                    <Form.Item label="Company Registration Number" name="registration" rules={[{required:true}]}>
+                        <Input />
+                    </Form.Item>
+                  }
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Country" name="country" rules={[{ required: true, message: "Field Required" }]}>
+                  <Form.Item label="Country" name="country" rules={[{ required: true}]}>
                       <Select
                           showSearch
                           allowClear
+                          onChange={handleCountrySelect}
                           options={countryList}
                           optionRender={(option) => (
                               <Space>
-                                  <img src={option.data.emoji} width={20} height={20} />
-                                  {option.data.desc}
+                                {option.data.emoji}
+                                {option.data.desc}
                               </Space>
                           )}
                       />
                   </Form.Item>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="State" name="state" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input />
-                  </Form.Item>
+                  <StateSelect label={+countryId===101?"State":"Select State/ Province"} name="state" f={form} onChange={(e:any)=>setStateId(e)} countryId={countryId}/>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="City" name="city" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input />
-                  </Form.Item>
+                  <CitySelect label="City" name="city" onChange={form} f={form} stateId={stateId}/>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="pincode" name="pincode" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input />
+                  <Form.Item label="pincode" name="pincode" rules={[{ required: true }]}>
+                      <Input type="number" />
                   </Form.Item>
               </Col>
               <Col xs={22} sm={22} md={24} lg={24}>
@@ -135,60 +162,60 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                   </Form.Item>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Website" name="website" rules={[{ required: true, message: "Field Required" }]}>
+                  <Form.Item label="Website" name="website" rules={[{ required: true }]}>
                       <Input />
                   </Form.Item>
               </Col>
 
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Name [Point of Contact / EXIM / Logistics Team]" required name="contactpersonName" rules={[{ required: true, message: "Field Required" }]}>
+                  <Form.Item label="Name [Point of Contact / EXIM / Logistics Team]" name={["pointSalesPricingTeam","name"]} rules={[{ required: true }]}>
                       <Input />
                   </Form.Item>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Email ID [Point of Contact / EXIM / Logistics Team]" required name="contactEmail">
+                  <Form.Item label="Email ID [Point of Contact / EXIM / Logistics Team]" name={["pointSalesPricingTeam","email"]}>
                       <Input type="email" />
                   </Form.Item>
               </Col>
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Mobile No [Point of Contact / EXIM / Logistics Team]" required name="mobileNumber" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input />
-                  </Form.Item>
-              </Col>
-
-              <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Year of Company Incorporation" required name="yearOfIncorporation" rules={[{ required: true, message: "Field Required" }]}>
+                  <Form.Item label="Mobile No [Point of Contact / EXIM / Logistics Team]" name={["pointSalesPricingTeam","mobile"]} rules={[{ required: true },FormRules.mobile]}>
                       <Input type="number" />
                   </Form.Item>
               </Col>
 
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Annual Turnover in Last FY" name="annualTurnover" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input addonAfter="₹" />
+                  <Form.Item label="Year of Company Incorporation" name="yearOfIncorporation" rules={[{ required: true }]}>
+                      <Input type="number" />
                   </Form.Item>
               </Col>
 
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Annual Volume (TEUs) by Ocean in Last FY" name="annualVolumeTuesByOcean" rules={[{ required: true, message: "Field Required" }]}>
+                  <Form.Item label="Annual Turnover in Last FY" name="annualTurnover" rules={[{ required: true }]}>
+                      <Input type='number' addonAfter={<p className='p-0 m-0'>{Currency}</p>} />
+                  </Form.Item>
+              </Col>
+
+              <Col xs={22} sm={22} md={12} lg={12}>
+                  <Form.Item label="Annual Volume (TEUs) by Ocean in Last FY" name="annualVolumeTuesByOcean" rules={[{ required: true }]}>
                       <Input type="number" addonAfter="TEUs" />
                   </Form.Item>
               </Col>
 
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Annual Volume (MT) by Air in Last FY" name="annualVolumeMTByAir" rules={[{ required: true, message: "Field Required" }]}>
+                  <Form.Item label="Annual Volume (MT) by Air in Last FY" name="annualVolumeMtByAir" rules={[{ required: true }]}>
                       <Input type="number" addonAfter="MT" />
                   </Form.Item>
               </Col>
 
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Escalation/Emergency Contact Numbers" name="emergencyContactNumber" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input />
+                  <Form.Item label="Escalation/Emergency Contact Numbers" name="emergencyContactNumber" rules={[{ required: true }]}>
+                      <Select mode={"tags"} showSearch={false} />
                   </Form.Item>
               </Col>
 
               <Col xs={22} sm={22} md={12} lg={12}>
-                  <Form.Item label="Escalation/Emergency Email IDs" name="emergencyContactEmail" rules={[{ required: true, message: "Field Required" }]}>
-                      <Input />
+                  <Form.Item label="Escalation/Emergency Email IDs" name="emergencyContactEmail" rules={[{ required: true }]}>
+                    <Select mode={"tags"} showSearch={false} />
                   </Form.Item>
               </Col>
 
@@ -206,8 +233,8 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
 
 const LicenseForm = ({name,label,isLicense,f}:{name:any,label:String,isLicense?:boolean,f:FormInstance<any>}) => {
     const [fileList, setFileList] = useState([]);
-    
-    const onChange = (e:any) => f.setFieldValue([name,"file"],e.file.originFileObj)
+    const status = useWatch(["userdocuments",name,"status"],f);
+    const onChange = (e:any) => f.setFieldValue(["userdocuments",name,"file"],e.file.originFileObj)
 
     const layoutProps = {
         style1:{
@@ -220,30 +247,30 @@ const LicenseForm = ({name,label,isLicense,f}:{name:any,label:String,isLicense?:
     return (
         <Row gutter={[8,8]}>            
             <Col xs={24} sm={24} md={24} lg={6} className='px-0'>
-                <Form.Item name={[name,"status"]} initialValue={false} valuePropName="checked">
+                <Form.Item name={["userdocuments",name,"status"]} initialValue={false} valuePropName="checked">
                     <Checkbox value={true} className='d-flex align-items-center px-0'><p className='text-wrap text-primary1 fw-bolder px-1 my-0'>{label}</p></Checkbox>
                 </Form.Item>
             </Col>
             <Col {...layoutProps.style1}>
-                <Form.Item name={[name,"licenseNo"]} label={<p className='p-0 m-0 text-muted'>{!isLicense?"License No.":"Certificate No."}</p>} >
-                <Input />
+                <Form.Item rules={[{required:status}]} name={["userdocuments",name,"licenseNo"]} label={<p className='p-0 m-0 text-muted'>{!isLicense?"License No.":"Certificate No."}</p>} >
+                <Input disabled={!status} />
                 </Form.Item>
             </Col>
             <Col {...layoutProps.style1}>
-                <Form.Item name={[name, "file"]} label={<p className='p-0 m-0 text-muted'>Upload</p>}>
+                <Form.Item rules={[{required:status}]} name={["userdocuments",name, "file"]} label={<p className='p-0 m-0 text-muted'>Upload</p>}>
                 <Upload
                     onChange={onChange}
                     multiple
                     accept=".pdf,.doc,.docx"
                     className='upload-0'
                 >
-                    <Button block icon={<UploadOutlined/>}>Upload File</Button>
+                    <Button disabled={!status} block icon={<UploadOutlined/>}>Upload File</Button>
                 </Upload>
                 </Form.Item>
             </Col>
             <Col {...layoutProps.style1}>
-                <Form.Item name={[name, "validTill"]} label={<p className='p-0 m-0 text-muted'>Valid Till</p>}>
-                <DatePicker />
+                <Form.Item rules={[{required:status}]} name={["userdocuments",name, "validTill"]} label={<p className='p-0 m-0 text-muted'>Valid Till</p>}>
+                <DatePicker disabled={!status} style={{minWidth:'100%'}} />
                 </Form.Item>
             </Col>
         </Row>
@@ -251,10 +278,45 @@ const LicenseForm = ({name,label,isLicense,f}:{name:any,label:String,isLicense?:
   };
   
   const Licenses = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<number>> }) => {
+    const param = useSearchParams()
+    const [global,setGlobal] = useState<boolean>(false)
     const [form] = Form.useForm();
-    const onFinish=(value:any) => {
-        console.log(value);        
+    const onFinish=async(value:any) => {
+        let errorLists = []
+        let minDoc = false
+        console.log(value);
+        
+        let a = Object.keys(value.userdocuments).map(async(i)=>{
+            if(value.userdocuments[i]?.status){
+                value.userdocuments[i].file = await uploadFile({ file: value.userdocuments[i].file,cname:i}).then((r:any)=>r?.data.file)
+                minDoc = true
+            }
+        })
+        let updated = await Promise.all(a)
+        
+        
+        if(!minDoc){
+            errorLists.push("Please upload at least one document.")
+        }
+        if(errorLists.length>0){
+            errorLists.forEach((error)=>{
+                message.error(error)
+            })
+            return
+        }
+        
+        signUPEndPoint3(value)
+        .then(r=>{
+            if(r.code){
+                setCurrentStep(i=>++i)
+            }
+        })
+        .catch(r=>{console.log(r)
+        })    
     }
+    useEffect(() => {
+        setGlobal(param.get("global")?false:true);
+    },[param])
     return (
       <div>
         <h2 className="text-primary2">Upload licenses/Certifications</h2>
@@ -263,24 +325,30 @@ const LicenseForm = ({name,label,isLicense,f}:{name:any,label:String,isLicense?:
             onFinish={onFinish}
         >
         <Card className='m-1 my-3'>
-          <LicenseForm f={form} name={"MTO / Multimodal transport license"} label={"MTO / Multimodal transport license"} />
-          <LicenseForm f={form} name={"IATA"} label={"IATA"} />
-          <LicenseForm f={form} name={"FIATA"} label={"FIATA"} />
-          <LicenseForm f={form} name={"FMC [ Freight Forwarder ]"} label={"FMC [ Freight Forwarder ]"} />
-          <LicenseForm f={form} name={"NVOCC"} label={"NVOCC"} />
+          <LicenseForm f={form} name={"mtoMultimodalTransportLicense"} label={"MTO / Multimodal transport license"} />
+          <LicenseForm f={form} name={"iata"} label={"IATA"} />
+          <LicenseForm f={form} name={"fiata"} label={"FIATA"} />
+          <LicenseForm f={form} name={"fmcFreightForwarder"} label={"FMC [ Freight Forwarder ]"} />
+          <LicenseForm f={form} name={"nvooc"} label={"NVOCC"} />
         </Card>
         <Card className='m-1 my-2'>
-          <LicenseForm f={form} isLicense name={"Forwarder / Customs Association Membership"} label={"Forwarder / Customs Association Membership"} />        
-          <LicenseForm f={form} isLicense name={"WCA"} label={"WCA"} />        
-          <LicenseForm f={form} isLicense name={"JC Trans"} label={"JC Trans"} />        
+          <LicenseForm f={form} isLicense name={"customsAssociationMembership"} label={"Forwarder / Customs Association Membership"} />        
+          <LicenseForm f={form} isLicense name={"chamberOfCommerceTradeAssociation"} label={"Chamber of Commerce / Trade association"} />        
+          <LicenseForm f={form} isLicense name={"wca"} label={"WCA"} />        
+          <LicenseForm f={form} isLicense name={"jctrans"} label={"JC Trans"} />        
         </Card>
         <Card className='m-1 my-2'>
-          <LicenseForm f={form} name={"Custom License"} label={"Custom License"} />        
-          <LicenseForm f={form} name={"AEO"} label={"AEO"} />        
-          <LicenseForm f={form} name={"BASC"} label={"BASC"} />        
-          <LicenseForm f={form} name={"C-TPAT"} label={"C-TPAT"} />        
+          <LicenseForm f={form} name={"customLicense"} label={"Custom License"} />        
+          <LicenseForm f={form} name={"aeo"} label={"AEO"} />        
+          <LicenseForm f={form} name={"dgHaz"} label={"DG / Haz Cargo"} />        
+          <LicenseForm f={form} name={"tapa"} label={"TAPA"} />        
+          <LicenseForm f={form} name={"basc"} label={"BASC"} />        
+          <LicenseForm f={form} name={"ctpat"} label={"C-TPAT"} />        
+          <LicenseForm f={form} name={"iso9001"} label={"ISO 9001"} />        
         </Card>
-        <KYCUploadFormIndia f={form}/>
+        {global?
+        <KYCUploadFormIndia f={form}/>:
+         <KYCUploadFormGlobal f={form}/>}
         <Col span={24} className='px-5'>
             <Form.Item className='col-10 col-md-8 mx-auto'>
                 <Button shape="round" size="large" type="primary" block htmlType="submit">
@@ -304,37 +372,84 @@ const KYCUploadFormIndia = ({f}:{f:FormInstance<any>}) => {
         <h3 className='text-primary2 my-4'>Upload KYC documents [ INDIA ]</h3>
         <Row gutter={16}>
             <Col xs={24} sm={24} md={12} lg={12}>
-            <CustomFormInput f={f} name={"GST Certificate"} label={"GST Certificate"}/>
+                <CustomFormUpload required style f={f} name={"gst"} label={"GST Certificate"}/>
             </Col>
             <Col xs={24} sm={24} md={12} lg={12}>
-                <CustomFormInput f={f} name={"Company PAN Copy"} label={"Company PAN Copy"}/>
-            </Col>
-        </Row>
-        <Row gutter={16}>
-            <Col xs={24} sm={24} md={12} lg={12}>
-                <CustomFormInput f={f} name={"Company Registration Certificate"} label={"Company Registration Certificate"} />
-            </Col>
-            <Col xs={24} sm={24} md={12} lg={12}>
-                <CustomFormInput f={f} name={"Trade License"} label={"Trade License"}/>
+                <CustomFormUpload required style f={f} name={"pan"} label={"Company PAN Copy"}/>
             </Col>
         </Row>
         <Row gutter={16}>
             <Col xs={24} sm={24} md={12} lg={12}>
-            <CustomFormInput f={f} name={"Director's/Partner's ID Card (Passport/DL/Aadhar)"} label={"Director's/Partner's ID Card (Passport/DL/Aadhar)"}/>
+                <CustomFormUpload required style f={f} name={"registrationCertificate"} label={"Company Registration Certificate"} />
             </Col>
             <Col xs={24} sm={24} md={12} lg={12}>
-            <CustomFormInput f={f} name={"Proof of business address (Utility Bill/Lease agreement)"} label={"Proof of business address (Utility Bill/Lease agreement)"}/>
+                <CustomFormUpload required style f={f} name={"tradeLicense"} label={"Trade License"}/>
+            </Col>
+        </Row>
+        <Row gutter={16}>
+            <Col xs={24} sm={24} md={12} lg={12}>
+                <CustomFormUpload required style f={f} name={"directorNationalId"} label={"Director's/Partner's ID Card (Passport/DL/Aadhar)"}/>
+            </Col>
+            <Col xs={24} sm={24} md={12} lg={12}>
+                <CustomFormUpload required style f={f} name={"ProofBusinessAddress"} label={"Proof of business address (Utility Bill/Lease agreement)"}/>
+            </Col>
+        </Row>
+    </div>
+  );
+};
+const KYCUploadFormGlobal = ({f}:{f:FormInstance<any>}) => {
+  const [fileList, setFileList] = useState([]);
+  const onUploadChange = (info:any) => {
+      // setFileList(info.fileList);
+    };
+    
+    return (
+        <div className='p-2'>
+        <h3 className='text-primary2 my-4'>Upload KYC documents [ Global ]</h3>
+        <Row gutter={16}>
+            <Col xs={24} sm={24} md={12} lg={12}>
+            <CustomFormUpload required style f={f} name={"registrationCertificate"} label={"Company Registration certificate"}/>
+            </Col>
+            <Col xs={24} sm={24} md={12} lg={12}>
+                <CustomFormUpload required style f={f} name={"taxRegistrationCopy"} label={"Tax registration Copy"}/>
+            </Col>
+        </Row>
+        <Row gutter={16}>
+            <Col xs={24} sm={24} md={12} lg={12}>
+                <CustomFormUpload required style f={f} name={"directorNationalId"} label={"Director’s / Partner’s National ID ( Passport / DL / SSN )"} />
+            </Col>
+            <Col xs={24} sm={24} md={12} lg={12}>
+                <CustomFormUpload required style f={f} name={"ProofBusinessAddress"} label={"Proof of business address (Utility Bill/Lease agreement)"}/>
             </Col>
         </Row>
     </div>
   );
 };
 
-const CustomFormInput =({f,name,label}:{label:any,name:any,f:FormInstance<any>}) => {
-    const onChange = (e:any) => f.setFieldValue([name,"file"],e.file.originFileObj)
+const CustomFormUpload =({f,name,label,style=false,maxCount=1 ,required=false}:{required?:boolean,maxCount?:number,style?:boolean,label:any,name:any,f:FormInstance<any>}) => {
+    const [token,setToken] = useState<any>("")
+    useEffect(()=>{
+        getSessionCache()
+        .then(r=>setToken(r.user?.email))
+        .catch(r=>{})
+    },[])
+    const props = {
+        onChange:({file}:any)=>{
+            
+            if(file.status=="done"){                
+                f.setFieldValue(style?name:[name,"file"],file.response.file)
+            }
+        },
+        maxCount
+      };
     return(
-        <Form.Item name={name} label={<p className='p-0 m-0 text-muted'>{label}</p>}>
-            <Upload  className={`upload-0`}>
+        <Form.Item name={name} rules={[{required}]} label={<p className='p-0 m-0 text-muted'>{label}</p>}>
+            <Upload {...props}  className={`upload-0`}
+                action={strings.uploadEndPoint}
+                name="file"
+                data={{cname:name}}
+                headers={{Authorization: 'Bearer ' +token}}
+            >
             <Button block icon={<UploadOutlined/>}>Upload File</Button>
             </Upload>
         </Form.Item>

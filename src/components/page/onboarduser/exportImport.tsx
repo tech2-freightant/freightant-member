@@ -5,11 +5,13 @@ import Sider from 'antd/es/layout/Sider';
 import { Content } from 'antd/es/layout/layout';
 import OnboardUserUI from './layout';
 import { assetsRootPath, validateMessages } from '@/components/utils';
-import { InboxOutlined } from '@ant-design/icons';
-import { signUPEndPoint2, signUPEndPoint3 } from '@/network/endpoints';
+import {  UploadOutlined,} from '@ant-design/icons';
+import { getCountryFromName, getOrg, signUPEndPoint2, signUPEndPoint3, signUPEndPoint4 } from '@/network/endpoints';
 import UnAuthHOC, { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC';
 import { useWatch } from 'antd/es/form/Form';
 import FormItem from 'antd/es/form/FormItem';
+import { hashCountry } from '@/components/utils/hashcountry';
+import StateSelect, { CitySelectV2, StateSelectV2 } from '@/components/supportcomponents/customcomponents/stateselect';
 
 const ExportImportUI = () => {
     const [currentStep, setCurrentStep] = useState<number>(0)
@@ -23,7 +25,7 @@ const ExportImportUI = () => {
                 <KYCUploadForm setCurrentStep={setCurrentStep} />
             </div>
             <div className={currentStep === 2 ? "" : "d-none"}>
-                <BranchDetailsForm setCurrentStep={setCurrentStep} title={"Branch Details - Exporter/Importer"} />
+                <BranchDetailsForm currentStep={currentStep} setCurrentStep={setCurrentStep} title={"Branch Details - Exporter/Importer"} />
             </div>
         </OnboardUserUI>
     )
@@ -82,6 +84,8 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
     }, []);
 
     const onFinish = (values: any) => {
+        console.log(values);
+        
         signUPEndPoint2(values)
             .then(r => {
                 if(r.code){
@@ -121,13 +125,13 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="IEC Code" required name="iecCode" >
+                    <Form.Item label="IEC Code" name="iec" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
 
-                    <Form.Item label="GST Number" name="gstNumber">
+                    <Form.Item label="GST Number" name="gst" rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
@@ -158,11 +162,11 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="pincode" name="pincode" rules={[{ required: true,  }]}>
-                        <Input />
+                        <Input type="number" />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={24} lg={24}>
-                    <Form.Item label="Registered Office Address" name="registeredOfficeAddress">
+                    <Form.Item label="Registered Office Address" name="registeredOfficeAddress" rules={[{ required: true,  }]}>
                         <Input.TextArea rows={2} />
                     </Form.Item>
                 </Col>
@@ -173,17 +177,17 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Name [Point of Contact / EXIM / Logistics Team]" required name="contactpersonName" rules={[{ required: true,  }]}>
+                    <Form.Item label="Name [Point of Contact / EXIM / Logistics Team]" required name={["pointSalesPricingTeam","name"]} rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Email ID [Point of Contact / EXIM / Logistics Team]" required name="contactEmail">
+                    <Form.Item label="Email ID [Point of Contact / EXIM / Logistics Team]" required name={["pointSalesPricingTeam",`email`]}>
                         <Input type="email" />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Mobile No [Point of Contact / EXIM / Logistics Team]" required name="mobileNumber" rules={[{ required: true,  }]}>
+                    <Form.Item label="Mobile No [Point of Contact / EXIM / Logistics Team]" required name={["pointSalesPricingTeam",`mobile`]} rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
@@ -207,20 +211,20 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="Annual Volume (MT) by Air in Last FY" name="annualVolumeMTByAir" rules={[{ required: true,  }]}>
+                    <Form.Item label="Annual Volume (MT) by Air in Last FY" name="annualVolumeMtByAir" rules={[{ required: true,  }]}>
                         <Input type="number" addonAfter="MT" />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="Escalation/Emergency Contact Numbers" name="emergencyContactNumber" rules={[{ required: true,  }]}>
-                        <Input />
+                        <Select mode={"tags"} showSearch={false} />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="Escalation/Emergency Email IDs" name="emergencyContactEmail" rules={[{ required: true,  }]}>
-                        <Input />
+                        <Select mode={"tags"} showSearch={false} />
                     </Form.Item>
                 </Col>
 
@@ -243,7 +247,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
 
     const onFinish = (values: any) => {
         console.log('Success:', values);
-        // setCurrentStep(i=>++i)
+        setCurrentStep(i=>++i)
         let a:any = {}
         Object.keys(values).forEach(key=>{
             a[key] = values[key]?.file?values[key]?.file.originFileObj:values[key]
@@ -291,7 +295,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="IEC Copy" name={"iec"} rules={[{required:true}]}>
                         <Upload {...uploadProps} className="upload-0" >
-                            <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                            <Button block icon={<UploadOutlined />}>Click to upload</Button>
                         </Upload>
                     </Form.Item>
                 </Col>
@@ -300,7 +304,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="GST Copy" name={"gst"} rules={[{required:true}]}>                        
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>                        
                     </Form.Item>
                 </Col>
@@ -311,7 +315,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="Company PAN Copy" name={"pan"} rules={[{required:true}]}>                        
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>                        
                     </Form.Item>
                 </Col>
@@ -320,7 +324,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="Company Registration Certificate" name={"registration"} rules={[{required:true}]}>                        
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>                        
                     </Form.Item>
                 </Col>
@@ -331,7 +335,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="Trade License" name={"tradeLicense"} rules={[{required:true}]}>                        
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>                        
                     </Form.Item>
                 </Col>
@@ -339,7 +343,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="Director's/Partner's ID Card (Passport/DL/Aadhar)" name={"aadhaar"} rules={[{required:true}]}>                        
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>                        
                     </Form.Item>
                 </Col>
@@ -348,7 +352,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Col {...responsiveItemLayout}>
                     <Form.Item label="Proof of Business Address (Utility Bill/Lease agreement)" name={"proofOfBussiness"}>
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>                        
                     </Form.Item>
                 </Col>
@@ -358,13 +362,13 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                 <Row gutter={[48, 0]}>
                     <Col {...responsiveItemLayout} >
                         <Form.Item >
-                            <Select options={indianExportOrganizations.map(i=>({key:i,label:i,value:i}))} />
+                            <Select showSearch options={indianExportOrganizations.map(i=>({key:i,label:i,value:i}))} />
                         </Form.Item>
                     </Col>
                     <Col {...responsiveItemLayout} >
                         <Form.Item >
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>
                         </Form.Item>
                     </Col>
@@ -383,7 +387,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                     <Col {...responsiveItemLayout} >
                         <Form.Item name={"aeo"} rules={[{required:true}]}>
                             <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
                             </Upload>
                         </Form.Item>
                     </Col>}
@@ -407,7 +411,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
                         <Col {...responsiveItemLayout} >
                             <Form.Item name={"starExportHouse"} rules={[{required:true}]}>
                                 <Upload {...uploadProps} className="upload-0">
-                                    <Button block icon={<InboxOutlined />}>Click to upload</Button>
+                                    <Button block icon={<UploadOutlined />}>Click to upload</Button>
                                 </Upload>
                             </Form.Item>
                         </Col>
@@ -428,45 +432,92 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
     )
 }
 
-export  const BranchDetailsForm = ({ setCurrentStep,title }: { setCurrentStep: Dispatch<SetStateAction<number>>,title:string }) => {
-    const [formData, setFormData] = useState([{ key: 0 }]); // Initial state with one branch
-  
+export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {currentStep:number, setCurrentStep: Dispatch<SetStateAction<number>>,title:string }) => {
+    const [formData, setFormData] = useState([{ key: 0 }]);
+    const [form] = Form.useForm();
+    const [org, setOrg] = useState(null);
+    const [countryId, setCountryId] = useState("");
+    const [stateId, setStateId] = useState("")
+    const [dataList,setDataList] = useState([{}])
+    const onFinish = (value:any) => {
+        console.log(value);
+        let errors:string[] = []
+        value.branches.forEach((i:any,index:number)=>{
+            i.contactPersonEmail.forEach((element:string) => {
+                if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(element)){
+                  errors.push(`branch ${index} Invalid Email`)
+                }
+              })
+        });
+        value.branches.forEach((i:any,index:number)=>{
+            i.contactPersonPhone.forEach((element:string) => {
+                if(!/^\d{10}$/.test(element)){
+                  errors.push(`branch ${index} Invalid Phone`)
+                }
+              })
+        });
+        dataList.forEach((element:any) => {
+            if(!element?.state || !element.city){
+                errors.push("State and City are required")
+            }
+        })
+        if(errors.length>0){
+          errors.forEach((i=>message.error(i)))
+          return
+        }
+        let finalData  = value.branches.map((element:any,index:number) =>({...element,...dataList[index]}))
+        signUPEndPoint4(finalData)
+        .then(r=>{console.log(r)
+        })
+        .catch(r=>{console.log(r)
+        })
+        
+        
+    }
+
+    useEffect(() => {
+      const fetchData = async () => {
+        const fetchedOrg = await getOrg(); 
+        if(fetchedOrg.code){
+          setOrg(fetchedOrg.data);
+          setCountryId(hashCountry[fetchedOrg.data.country].id)
+        }
+      };
+      fetchData();
+    }, [currentStep]);
+    useEffect(() => {
+      console.log(dataList);
+      
+    }, [dataList])
+    
     return (
-      <Form layout="vertical" initialValues={{"branches":[{"city":""}]}} validateMessages={validateMessages}>
+      <Form layout="vertical" initialValues={{"branches":[{}]}} validateMessages={validateMessages} form={form} onFinish={onFinish}>
         <h3 className={`text-primary2`}>{title}</h3>
         <Form.List name="branches">
           {(fields, { add, remove }) => (
             <>
               {fields.map((field,index) => (
-                <Card key={field.key+1} title={`Branch ${field.key+1}`} className='my-2' extra={field.key>0&&<Button onClick={()=>remove(field.key)} shape="round">Delete <span className='text-danger'>X</span> </Button>}>
+                <Card key={field.key+1} title={`Branch ${index+1}`} className='my-2' extra={field.key>0&&<Button onClick={()=>{remove(field.key),setDataList(i=>i.filter((i,iIndex)=>iIndex!==index))}} shape="round">Delete <span className='text-danger'>X</span> </Button>}>
                   
                   <Row gutter={16}>
                     <Col {...responsiveItemLayout}>
-                      <FormItem
-                        {...field}
-                        name={[field.name, 'stateProvince']}
+                      <StateSelectV2
+                        props={{...field}}
+                        name={index}
                         label="Select Branch State/Province"
-                        rules={[{required:true}]}
-                      >
-                        <Select>
-                          <Select.Option value="IN-MH">Maharashtra</Select.Option>
-                          <Select.Option value="IN-TN">Tamil Nadu</Select.Option>
-                          {/* Add more options as needed */}
-                        </Select>
-                      </FormItem>
+                        countryId={countryId}
+                        f={setDataList} 
+                        onChange={(e:any)=>setStateId(e)}
+                      />
                     </Col>
                     <Col {...responsiveItemLayout}>
-                      <FormItem
-                        {...field}
-                        name={[field.name, 'city']}
-                        label="Select Branch City"
-                        rules={[{required:true}]}
-                      >
-                        <Select>
-                          <Select.Option value="city1">Select here</Select.Option>
-                          {/* Add more options as needed */}
-                        </Select>
-                      </FormItem>
+                    <CitySelectV2
+                        props={{...field}}
+                        name={index}
+                        label="Select Branch State/Province"
+                        stateId={stateId}
+                        f={setDataList}
+                        onChange={form} />
                     </Col>                  
                     <Col {...responsiveItemLayout}>
                       <FormItem
@@ -481,7 +532,7 @@ export  const BranchDetailsForm = ({ setCurrentStep,title }: { setCurrentStep: D
                     <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
-                        name={[field.name, 'contactName']}
+                        name={[field.name, 'contactPersonName']}
                         label="Name [Point of Contact/EXIM/Logistics Team]"
                         rules={[{required:true}]}
                       >
@@ -491,31 +542,29 @@ export  const BranchDetailsForm = ({ setCurrentStep,title }: { setCurrentStep: D
                     <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
-                        name={[field.name, 'email']}
+                        name={[field.name, 'contactPersonEmail']}
                         rules={[
-                            {type:"email",message:"Please enter a valid email address"},
                             {required:true}
                         ]}
                         label="Email ID [Point of Contact/EXIM/Logistics Team]"
                       >
-                        <Input type="email" placeholder="Enter Email" />
+                        <Select placeholder="Enter Email" mode="tags"/>
                       </FormItem>
                     </Col>
                     <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
-                        name={[field.name, 'mobileNo']}
+                        name={[field.name, 'contactPersonPhone']}
                         label="Mobile No [Point of Contact/EXIM/Logistics Team]"
                         rules={[
-                            {min:10,max:10,message: 'Please enter correct number'},
                             {required:true}
                         ]}
                       >
-                        <Input placeholder="Enter Mobile No" />
+                        <Select mode="tags" placeholder="Enter Mobile No" />
                       </FormItem>
                     </Col>
                   </Row>
-                    {fields.length===index+1&&<Button shape="round" onClick={add}>
+                    {fields.length===index+1&&<Button shape="round" onClick={()=>{add(),setDataList(i=>[...i,...[{}]])}}>
                       Add Branch
                     </Button>}
                 </Card>

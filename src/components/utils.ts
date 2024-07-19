@@ -12,4 +12,6 @@ const inter = Montserrat({
   subsets: ['latin'],
   display: 'swap',
 });
+
+
 export {assetsRootPath, errorMessage, validateMessages, inter}

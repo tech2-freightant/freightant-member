@@ -93,21 +93,6 @@ const SignUpUI = () => {
           rules={[
             {type:"email",message:"Please enter a valid email address"},
             {required:true},
-            {validator:(rule, value) =>{
-              try {   
-                if(!value.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)){
-                  return
-                }
-               return instance.post(`/user/userexist`,{businessEmail:value})
-               .then(r=>Promise.resolve())
-               .catch(err => Promise.reject("User Already Exist"))
-              }catch (error){
-                console.log("hi");
-                
-                return Promise.reject("User Already Exist")
-              }
-            }
-            },
         ]}
         >
           <Input placeholder="Enter your business email" />
@@ -140,7 +125,7 @@ const SignUpUI = () => {
             </Form.Item>
           </Col>
           <Col span={16}>
-            <Form.Item className='mb-2' name={"phone"} rules={[{required:true},{min:10,max:10,message: 'Please enter correct number'}]}>
+            <Form.Item className='mb-2' name={"mobile"} rules={[{required:true},{min:10,max:10,message: 'Please enter correct number'}]}>
               <Input placeholder="Enter your phone number" />
             </Form.Item>
           </Col>
@@ -287,7 +272,7 @@ const SignUpCongratsUI =({f}:{f:any}) =>{
             <div className="freightant-logo d-flex flex-column justify-content-center align-items-center my-2 mb-3">
                 <Title className='text-primary2 text-center' level={3}>Congratulations</Title>
                 <p className="text-mute text-center">Your email id is verified successfully . Continue to the application.</p>
-                <Button disabled={loading} onClick={()=>router.replace("/onboarduser"+f.role==="FF"?"":"/exporter")} type="primary" block shape='round' className='col-12'>Continue</Button>
+                <Button disabled={loading} onClick={()=>router.replace(`/onboarduser${f.role==="FF"?"":"/exporter"}`)} type="primary" block shape='round' className='col-12'>Continue</Button>
             </div>
         </div>
     )
