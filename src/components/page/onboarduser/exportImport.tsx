@@ -19,7 +19,7 @@ import { CustomFormUpload } from './freightforwader';
 import { FormRules } from '@/components/strings';
 
 const ExportImportUI = () => {
-    const [currentStep, setCurrentStep] = useState<number>(1)
+    const [currentStep, setCurrentStep] = useState<number>(0)
     const {push} = useRouter()
     const {data, error,isLoading} = useSWR("/",getUser)
     useEffect(()=>{
