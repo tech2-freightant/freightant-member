@@ -1,28 +1,47 @@
 "use client"
 import React, { useState, useEffect, DispatchWithoutAction, SetStateAction, Dispatch } from 'react';
-import { Form, Input, Checkbox, Select, InputNumber, Button, Space, Layout, Steps, Row, Col, message, Upload, Radio, Rate, Card } from 'antd';
+import { Form, Input, Checkbox, Select, InputNumber, Button, Space, Layout, Steps, Row, Col, message, Upload, Radio, Rate, Card, Spin } from 'antd';
 import Sider from 'antd/es/layout/Sider';
 import { Content } from 'antd/es/layout/layout';
 import OnboardUserUI from './layout';
 import { assetsRootPath, validateMessages } from '@/components/utils';
 import {  UploadOutlined,} from '@ant-design/icons';
-import { getCountryFromName, getOrg, signUPEndPoint2, signUPEndPoint3, signUPEndPoint4 } from '@/network/endpoints';
+import { getCountry, getCountryFromName, getOrg, getUser, signUPEndPoint2, signUPEndPoint3, signUPEndPoint4 } from '@/network/endpoints';
 import UnAuthHOC, { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC';
-import { useWatch } from 'antd/es/form/Form';
+import { FormInstance, useWatch } from 'antd/es/form/Form';
 import FormItem from 'antd/es/form/FormItem';
 import { hashCountry } from '@/components/utils/hashcountry';
-import StateSelect, { CitySelectV2, StateSelectV2 } from '@/components/supportcomponents/customcomponents/stateselect';
+import StateSelect, { CitySelect, CitySelectV2, StateSelectV2 } from '@/components/supportcomponents/customcomponents/stateselect';
+import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+import { CountryListType } from '@/types/defaults';
+import { CustomFormUpload } from './freightforwader';
+import { FormRules } from '@/components/strings';
 
 const ExportImportUI = () => {
-    const [currentStep, setCurrentStep] = useState<number>(0)
+    const [currentStep, setCurrentStep] = useState<number>(1)
+    const {push} = useRouter()
+    const {data, error,isLoading} = useSWR("/",getUser)
+    useEffect(()=>{
+        if(data?.data?.user.role==="FF"){
+            push("/onboarduser")
+        }
+    },[data])
 
+    if(isLoading){
+        return(
+            <div className="d-flex justify-content-center align-items-center p-5">
+              <Spin />
+            </div>
+        )
+    }
     return (
         <OnboardUserUI sideUI={<SideUI step={currentStep} />}>
             <div className={currentStep === 0 ? "" : "d-none"} style={{transition:"all 0.5"}}>
                 <KYCForm setCurrentStep={setCurrentStep} />
             </div>
             <div className={currentStep === 1 ? "" : "d-none"}>
-                <KYCUploadForm setCurrentStep={setCurrentStep} />
+                <KYCUploadForm step={currentStep} setCurrentStep={setCurrentStep} />
             </div>
             <div className={currentStep === 2 ? "" : "d-none"}>
                 <BranchDetailsForm currentStep={currentStep} setCurrentStep={setCurrentStep} title={"Branch Details - Exporter/Importer"} />
@@ -63,29 +82,36 @@ export const SideUI = ({ step }: { step: number }) => {
     );
 }
 
-const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<number>> }) => {
+const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<number>> }) => {
     const [form] = Form.useForm();
-    const [countryList, setCountryList] = useState()
+    const [countryList, setCountryList] = useState<CountryListType[]>([])
+
+    const [countryId, setCountryId] = useState("")
+    const [stateId, setStateId] = useState("")
+    const [Currency, setCurrency] = useState("₹")
+    const handleCountrySelect = (e: any) => {
+        setCountryId((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].id)
+        setCurrency((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].currency_symbol)
+    }
 
     // Simulate fetching country options (replace with actual API call)
     useEffect(() => {
         const fetchCountries = async () => {
-            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags'); // Replace with your API endpoint
-            const countries = await response.json();
+            const response = await getCountry() 
+            const countries = await response.data;
+
             setCountryList(countries.map((country: any) => ({
-                label: country.name.official,
-                value: country.name.common,
-                emoji: country.flags.png,
-                desc: country.name.common,
+                desc: country.name,
+                value: country.name,
+                ...country
             })));
+
 
         };
         fetchCountries();
     }, []);
 
-    const onFinish = (values: any) => {
-        console.log(values);
-        
+    const onFinish = (values: any) => {                
         signUPEndPoint2(values)
             .then(r => {
                 if(r.code){
@@ -97,8 +123,7 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
             })
     };
 
-    const layout = {
-    };
+    const layout = {};
 
     return (
         <Form
@@ -109,7 +134,7 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
             autoComplete="off"
             validateMessages={validateMessages}
         >
-            <h3 className="text-primary2 fw-bolder mb-5">KYC Details - Exporter / Importer - India</h3>
+            <h3 className="text-primary2 fw-bolder mb-5">KYC Details - Exporter / Importer - {+countryId === 101?"India":"Global"}</h3>
             <Row gutter={[16, 8]} justify={"center"}>
                 <Col xs={22} md={24}>
                     <Form.Item label="Company Name" className='col-12 col-md-8' required name="companyName" rules={[{ required: true,  }]}>
@@ -130,8 +155,7 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-
-                    <Form.Item label="GST Number" name="gst" rules={[{ required: true,  }]}>
+                    <Form.Item label={<>{+countryId === 101?"GST Number":"Company Registration Number"}</>} name={+countryId === 101?"gst":"registration"} rules={[{ required: true,  }]}>
                         <Input />
                     </Form.Item>
                 </Col>
@@ -140,10 +164,11 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                         <Select
                             showSearch
                             allowClear
+                            onChange={handleCountrySelect}
                             options={countryList}
                             optionRender={(option) => (
                                 <Space>
-                                    <img src={option.data.emoji} width={20} height={20} />
+                                    {option.data.emoji}
                                     {option.data.desc}
                                 </Space>
                             )}
@@ -151,17 +176,13 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="State" name="state" rules={[{ required: true,  }]}>
-                        <Input />
-                    </Form.Item>
+                    <StateSelect label={+countryId === 101 ? "State" : "Select State/ Province"} name="state" f={form} onChange={(e: any) => setStateId(e)} countryId={countryId} />
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="City" name="city" rules={[{ required: true,  }]}>
-                        <Input />
-                    </Form.Item>
+                    <CitySelect label="City" name="city" onChange={form} f={form} stateId={stateId} />
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="pincode" name="pincode" rules={[{ required: true,  }]}>
+                    <Form.Item label="pincode" name="pincode" rules={[{ required: true},FormRules.pincodes]}>
                         <Input type="number" />
                     </Form.Item>
                 </Col>
@@ -200,7 +221,7 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
 
                 <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="Annual Turnover in Last FY" name="annualTurnover" rules={[{ required: true,  }]}>
-                        <Input addonAfter="₹" />
+                        <Input addonAfter={Currency} />
                     </Form.Item>
                 </Col>
 
@@ -240,21 +261,20 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
     );
 };
 
-const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<number>> }) => {
+const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Dispatch<SetStateAction<number>> }) => {
     const [form] = Form.useForm();
     const AEO = useWatch("AEO", { form });
     const SEHC = useWatch("SEHC", { form });
+    const {data, error,isLoading} = useSWR("/?"+step,getUser)
 
     const onFinish = (values: any) => {
-        console.log('Success:', values);
-        setCurrentStep(i=>++i)
         let a:any = {}
-        Object.keys(values).forEach(key=>{
-            a[key] = values[key]?.file?values[key]?.file.originFileObj:values[key]
-        })
-        signUPEndPoint3(a)
+        
+        signUPEndPoint3(values)
         .then(r=>{
-            console.log(r);
+            if(r.code){
+                setCurrentStep(i=>++i)                
+            }
         })
         .catch(r=>{
             console.log("err ",r);
@@ -262,8 +282,7 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
     };
     
     const onFinishFailed = (errorInfo: any) => {
-        // setCurrentStep(i=>++i)
-        console.log('Failed:', errorInfo);
+        
     };
 
     const beforeUpload = (file: File) => {
@@ -288,153 +307,168 @@ const KYCUploadForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAc
     return (
         <Form {...layout} validateMessages={validateMessages} layout="vertical" form={form} onFinish={onFinish} onFinishFailed={onFinishFailed}>
             {/* Upload KYC Documents - India */}
+           {data?.data?.user.countryCode===91&& 
+           <>
             <h3 className='fw-bolder text-primary2 mb-4'>Upload KYC Documents - India</h3>
 
-            <Row gutter={[48, 0]} className='mt-2'>
-                {/* IEC Copy */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="IEC Copy" name={"iec"} rules={[{required:true}]}>
-                        <Upload {...uploadProps} className="upload-0" >
-                            <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                        </Upload>
-                    </Form.Item>
-                </Col>
-
-                {/* GST Copy */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="GST Copy" name={"gst"} rules={[{required:true}]}>                        
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>                        
-                    </Form.Item>
-                </Col>
-            </Row>
-
-            <Row gutter={[48, 0]}>
-                {/* Company PAN Copy */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="Company PAN Copy" name={"pan"} rules={[{required:true}]}>                        
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>                        
-                    </Form.Item>
-                </Col>
-
-                {/* Company Registration Certificate */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="Company Registration Certificate" name={"registration"} rules={[{required:true}]}>                        
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>                        
-                    </Form.Item>
-                </Col>
-            </Row>
-
-            <Row gutter={[48, 0]}>
-                {/* Trade License */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="Trade License" name={"tradeLicense"} rules={[{required:true}]}>                        
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>                        
-                    </Form.Item>
-                </Col>
-                {/* Director's/Partner's ID Card */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="Director's/Partner's ID Card (Passport/DL/Aadhar)" name={"aadhaar"} rules={[{required:true}]}>                        
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>                        
-                    </Form.Item>
-                </Col>
-
-                {/* Proof of Business Address */}
-                <Col {...responsiveItemLayout}>
-                    <Form.Item label="Proof of Business Address (Utility Bill/Lease agreement)" name={"proofOfBussiness"}>
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>                        
-                    </Form.Item>
-                </Col>
-            </Row>
-
-            <FormItem label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
-                <Row gutter={[48, 0]}>
-                    <Col {...responsiveItemLayout} >
-                        <Form.Item >
-                            <Select showSearch options={indianExportOrganizations.map(i=>({key:i,label:i,value:i}))} />
-                        </Form.Item>
+                <Row gutter={[48, 0]} className='mt-2'>
+                    {/* IEC Copy */}
+                    <Col {...responsiveItemLayout}>
+                        <CustomFormUpload required style f={form} label="IEC Copy" name={"iec"} />
                     </Col>
-                    <Col {...responsiveItemLayout} >
-                        <Form.Item >
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>
-                        </Form.Item>
+
+                    {/* GST Copy */}
+                    <Col {...responsiveItemLayout}>
+                        <CustomFormUpload required style f={form} label="GST Copy" name={"gst"}/>
                     </Col>
                 </Row>
-            </FormItem>
-            <Row gutter={[48, 0]}>
-                <Col span={24} >
-                    <Form.Item name={"AEO"} label="AEO Certificate">
-                        <Radio.Group optionType="default">
-                            <Radio.Button value="Yes">Yes</Radio.Button>
-                            <Radio.Button value="No">No</Radio.Button>
-                        </Radio.Group>
-                    </Form.Item>
-                </Col>
-                {AEO === "Yes" &&
-                    <Col {...responsiveItemLayout} >
-                        <Form.Item name={"aeo"} rules={[{required:true}]}>
-                            <Upload {...uploadProps} className="upload-0">
-                                <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                            </Upload>
-                        </Form.Item>
-                    </Col>}
-            </Row>
-            <Row gutter={[48, 0]}>
-                <Col span={24} >
-                    <Form.Item name={"SEHC"} label="Star Export House Certification">
-                        <Radio.Group optionType="default">
-                            <Radio.Button value="Yes">Yes</Radio.Button>
-                            <Radio.Button value="No">No</Radio.Button>
-                        </Radio.Group>
-                    </Form.Item>
-                </Col>
-                {SEHC === "Yes" &&
-                    <>
-                        <Col span={24} >
-                            <Form.Item name={""} label="Star Export House Certification">
-                                <Rate />
+
+                <Row gutter={[48, 0]}>
+                    {/* Company PAN Copy */}
+                    <Col {...responsiveItemLayout}>
+                        <CustomFormUpload required style f={form} label="Company PAN Copy" name={"pan"} />
+                    </Col>
+
+                    {/* Company Registration Certificate */}
+                    <Col {...responsiveItemLayout}>
+                        <CustomFormUpload required style f={form} label="Company Registration Certificate" name={"registrationCertificate"} />
+                    </Col>
+                </Row>
+
+                <Row gutter={[48, 0]}>
+                    {/* Trade License */}
+                    <Col {...responsiveItemLayout}>
+                        <CustomFormUpload required style f={form} label="Trade License" name={"tradeLicense"} />
+                    </Col>
+                    {/* Director's/Partner's ID Card */}
+                    <Col {...responsiveItemLayout}>
+                        <CustomFormUpload required style f={form} label="Director's/Partner's ID Card (Passport/DL/Aadhar)" name={"aadhaar"} />
+                    </Col>
+
+                    {/* Proof of Business Address */}
+                    <Col {...responsiveItemLayout}>
+                    <CustomFormUpload required style f={form} label="Proof of Business Address (Utility Bill/Lease agreement)" name={"proofOfBussiness"}/>
+                    </Col>
+                </Row>
+
+                <FormItem label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
+                    <Row gutter={[48, 0]}>
+                        <Col {...responsiveItemLayout} >
+                            <Form.Item name={"exportPromotionOrganisationMembership"}>
+                                <Select showSearch options={indianExportOrganizations.map(i=>({key:i,label:i,value:i}))} />
                             </Form.Item>
                         </Col>
                         <Col {...responsiveItemLayout} >
-                            <Form.Item name={"starExportHouse"} rules={[{required:true}]}>
-                                <Upload {...uploadProps} className="upload-0">
-                                    <Button block icon={<UploadOutlined />}>Click to upload</Button>
-                                </Upload>
-                            </Form.Item>
+                            <CustomFormUpload required style f={form} label={""}  name={"exportPromotionOrganisationMembershipDocument"}/>
                         </Col>
-                    </>
-                }
+                    </Row>
+                </FormItem>
+                <Row gutter={[48, 0]}>
+                    <Col span={24} >
+                        <Form.Item name={"AEO"} label="AEO Certificate">
+                            <Radio.Group optionType="default">
+                                <Radio.Button value="Yes">Yes</Radio.Button>
+                                <Radio.Button value="No">No</Radio.Button>
+                            </Radio.Group>
+                        </Form.Item>
+                    </Col>
+                    {AEO === "Yes" &&
+                        <Col {...responsiveItemLayout} >
+                            <CustomFormUpload required style f={form} label={""} name={"aeo"} />
+                        </Col>}
+                </Row>
+                <Row gutter={[48, 0]}>
+                    <Col span={24} >
+                        <Form.Item name={"SEHC"} label="Star Export House Certification">
+                            <Radio.Group optionType="default">
+                                <Radio.Button value="Yes">Yes</Radio.Button>
+                                <Radio.Button value="No">No</Radio.Button>
+                            </Radio.Group>
+                        </Form.Item>
+                    </Col>
+                    {SEHC === "Yes" &&
+                        <>
+                            <Col span={24} >
+                                <Form.Item name={"starExportHouseRating"} label="Star Export House Certification">
+                                    <Rate />
+                                </Form.Item>
+                            </Col>
+                            <Col {...responsiveItemLayout} >
+                                <CustomFormUpload required style f={form} label={""} name={"starExportHouse"} />
+                            </Col>
+                        </>
+                    }
 
-            </Row>
+                </Row>
 
-            <Col span={24} className='px-5'>
-                <Form.Item className='col-10 col-md-8 mx-auto'>
-                    <Button shape="round" size="large" type="primary" block htmlType="submit">
-                        Submit
-                    </Button>
-                </Form.Item>
-            </Col>
+            </>
+            }
+            {data?.data?.user.countryCode!==91&&
+                <KYCUploadFormGlobal f={form} />
+            }
+                <Col span={24} className='px-5'>
+                    <Form.Item className='col-10 col-md-8 mx-auto'>
+                        <Button shape="round" size="large" type="primary" block htmlType="submit">
+                            Submit
+                        </Button>
+                    </Form.Item>
+                </Col>
         </Form >
 
     )
 }
 
+const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
+    const [fileList, setFileList] = useState([]);
+    const AEO = useWatch("AEO", { form:f });
+
+    return (
+        <div className='p-2'>
+            <h3 className='text-primary2 my-4'>Upload KYC documents [ Global ]</h3>
+            <Row gutter={16}>
+                <Col xs={24} sm={24} md={12} lg={12}>
+                    <CustomFormUpload required style f={f} name={"iec"} label={"Import / Export license"} />
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={12}>
+                    <CustomFormUpload required style f={f} name={"registrationCertificate"} label={"Company Registration certificate"} />
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={12}>
+                    <CustomFormUpload required style f={f} name={"taxRegistrationCopy"} label={"Tax registration Copy"} />
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={12}>
+                    <CustomFormUpload required style f={f} name={"directorNationalId"} label={"Director’s / Partner’s National ID ( Passport / DL / SSN )"} />
+                </Col>
+            </Row>
+            <Row gutter={16}>
+                <Col xs={24} sm={24} md={12} lg={12}>
+                    <CustomFormUpload required style f={f} name={"ProofBusinessAddress"} label={"Proof of business address (Utility Bill/Lease agreement)"} />
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={12}>
+                    <CustomFormUpload required style f={f} name={"chamberOfCommerceTradeAssociation"} label={"Chamber of Commerce / Trade Association certificate"} />
+                </Col>
+            </Row>
+            <Row gutter={[48, 0]}>
+                    <Col span={24} >
+                        <Form.Item name={"AEO"} label="AEO Certificate">
+                            <Radio.Group optionType="default">
+                                <Radio.Button value="Yes">Yes</Radio.Button>
+                                <Radio.Button value="No">No</Radio.Button>
+                            </Radio.Group>
+                        </Form.Item>
+                    </Col>
+                    {AEO === "Yes" &&
+                        <Col {...responsiveItemLayout} >
+                            <CustomFormUpload required style f={f} label={""} name={"aeo"} />
+                        </Col>}
+                </Row>
+        </div>
+    );
+};
+
 export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {currentStep:number, setCurrentStep: Dispatch<SetStateAction<number>>,title:string }) => {
     const [formData, setFormData] = useState([{ key: 0 }]);
     const [form] = Form.useForm();
+    const {push} = useRouter()
     const [org, setOrg] = useState(null);
     const [countryId, setCountryId] = useState("");
     const [stateId, setStateId] = useState("")
@@ -467,7 +501,10 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
         }
         let finalData  = value.branches.map((element:any,index:number) =>({...element,...dataList[index]}))
         signUPEndPoint4(finalData)
-        .then(r=>{console.log(r)
+        .then(r=>{
+            if(r.code){
+                push("/")
+            }
         })
         .catch(r=>{console.log(r)
         })
@@ -485,10 +522,7 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
       };
       fetchData();
     }, [currentStep]);
-    useEffect(() => {
-      console.log(dataList);
-      
-    }, [dataList])
+    
     
     return (
       <Form layout="vertical" initialValues={{"branches":[{}]}} validateMessages={validateMessages} form={form} onFinish={onFinish}>

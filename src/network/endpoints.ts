@@ -48,7 +48,7 @@ export const signUPEndPoint2 = async(v:signupType2) =>{
 export const signUPEndPoint3 = async(v:any) =>{
     let user = await getSessionCache()  
     
-    return instance.put("user/signup/p3",v,{headers:{Authorization: "Bearer " + user?.user?.email,"Content-Type":"multipart/form-data"}})
+    return instance.put("user/signup/p3",v,{headers:{Authorization: "Bearer " + user?.user?.email}})
     .then(r=>({data:r.data,code:true,message:""}))
     .catch((error:any) =>({message:error.response.data.message,code:false}) 
     )
@@ -142,4 +142,12 @@ export async function getOrg(){
       return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
     }
   }
-  
+export async function getUser(){
+    try {
+      let user = await getSessionCache()  
+      const response = await instance(`/user/user`,{headers:{Authorization: "Bearer " + user?.user?.email}})
+      return { data: response.data.data, code: true, message: "" };
+    } catch (error: any) {
+      return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
+    }
+  }

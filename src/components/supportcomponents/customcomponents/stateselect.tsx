@@ -15,7 +15,7 @@ const StateSelect = ({ name, label, countryId, onChange,f ,props}:{props?:any,na
   }, [data]);
 
   const handleChange = (value:any) => {
-    console.log(name,value);
+    
     f.setFieldValue(name, value)
     onChange(states.filter(state => state.name === value)[0].id)
   };
@@ -68,7 +68,7 @@ export const CitySelect = ({ name, label, stateId, onChange,f ,...props}:{props?
 
   const handleChange = (value:any) => {
     f.setFieldValue(name, value)
-    console.log(name);        
+           
   };
 
   return (
@@ -85,7 +85,7 @@ export const CitySelectV2 = ({ name, label, stateId, onChange,f ,props}:{props?:
   const city = useWatch(name,f)
   
   useEffect(() => {
-      console.log(name,city);
+      
   }, [city]);
 
   useEffect(() => {
