@@ -193,7 +193,7 @@ const SignUpOTPUI:React.FC<signupotp> =({setSteps,f,token,setToken,value}) =>{
   const [formloading, setFormLoading] = useState(false)
 
   const handleResendOTP = ()=>{
-    registerOtp(f.getFieldValue("businessEmail"))
+    registerOtp(f.getFieldValue("businessEmail"),f.getFieldValue("fullName"))
     .then(r=>{
       if(r.code){
         setToken(r.data.token)
