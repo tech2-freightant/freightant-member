@@ -28,16 +28,29 @@ const SignUpUI = () => {
     const [formloading, setFormLoading] = useState(false)
     const [formValue, setFormValue] = useState({})
 
+    const [submittable, setSubmittable] = React.useState<boolean>(false);
+    const values = Form.useWatch([], form);
+  
+    React.useEffect(() => {
+      form
+        .validateFields({ validateOnly: true })
+        .then(() => setSubmittable(true))
+        .catch(() => setSubmittable(false));
+    }, [form, values]);
+
     // Simulate fetching country options (replace with actual API call)
     useEffect(() => {
         const fetchCountries = async () => {
             const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags,idd'); // Replace with your API endpoint
             const countries = await response.json();
+            console.log(countries);
+            
             setCountryList(countries.map((country: any) => ({
                 label: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}`,
                 value: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}`,
                 emoji: country.flags.png,
                 desc: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}`,
+                cstmName: `${country.idd.root}${country?.idd.suffixes.length>1?"":country?.idd.suffixes[0]}-${country?.name.common}`
             })));
 
 
@@ -51,7 +64,7 @@ const SignUpUI = () => {
     const handleFinish=(value:SignUPType)=> {
       setFormLoading(true);
       setFormValue(value);
-      registerOtp(value.businessEmail)
+      registerOtp(value.businessEmail,value.fullName)
       .then(r=>{
         if(r.code){
           setToken(r.data.token)
@@ -114,6 +127,7 @@ const SignUpUI = () => {
               <Select
                   showSearch
                   allowClear
+                  optionFilterProp={"cstmName"}
                   options={countryList}
                   optionRender={(option) => (
                       <Space>
@@ -147,7 +161,13 @@ const SignUpUI = () => {
           </Checkbox.Group>
         </Form.Item>
         <Form.Item >
-          <Button htmlType="submit" loading={formloading} type="primary" block shape="round">Sign Up</Button>
+          <Button
+            disabled={!submittable}
+            htmlType="submit" 
+            loading={formloading} 
+            type="primary" 
+            block 
+            shape="round">Sign Up</Button>
         </Form.Item>
       </Form>
       <Divider>or</Divider>

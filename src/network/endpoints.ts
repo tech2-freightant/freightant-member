@@ -71,8 +71,8 @@ export const loginEndPoint = async({
     )
 }
 
-export const registerOtp = async(businessEmail:string) =>{
-    return instance.post("otp/registerotp",{businessEmail})
+export const registerOtp = async(businessEmail:string,name:string) =>{
+    return instance.post("otp/registerotp",{businessEmail,name})
     .then(r=>({data:r.data.data,code:true,message:""}))
     .catch((error:any) =>({message:error.response.data.message,code:false,data:null}))
 }
