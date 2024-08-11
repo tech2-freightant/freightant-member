@@ -151,3 +151,11 @@ export async function getUser(){
       return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
     }
   }
+export async function locode(name:string){
+    try {
+      const response = await axios(`/api/location/locode?name=`+name)
+      return { data: response.data.data, code: true, message: "" };
+    } catch (error: any) {
+      return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
+    }
+}

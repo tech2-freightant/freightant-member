@@ -105,11 +105,12 @@ a {
     color-scheme: dark;
   }
 } */
+
 .text-primary2{
-  color: #0A0049;
+  color: #0A0049 !important;
 }
 .text-primary1{
-  color: #6A37F4;
+  color: #6A37F4 !important;
 }
 .bg-primary2{
   color: #0A0049;
