@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { getCity, getCountry, getStates } from '@/network/endpoints';
 import { useWatch } from 'antd/es/form/Form';
 
-export const CountrySelect = ({ name, label,onChange, f ,props}:{props?:any,name:any, label:string,onChange:any, f:FormInstance<any>}) => {
+export const CountrySelect = ({ name, label,onChange, f ,required=false,props}:{required?:boolean,props?:any,name:any, label:string,onChange:any, f:FormInstance<any>}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
   const { data, error } = useSWR( "/",getCountry,{dedupingInterval:5000*60});
 
@@ -21,7 +21,7 @@ export const CountrySelect = ({ name, label,onChange, f ,props}:{props?:any,name
   };
 
   return (  
-    <Form.Item>
+    <Form.Item rules={[{required}]} name={name}>
       <Select 
         style={{width: "100%",}}
         showSearch 
@@ -84,7 +84,7 @@ export const StateSelectV2 = ({ name, label, countryId, onChange,f ,props}:{prop
   );
 };
 
-export const StateSelectV3 = ({ name, label, countryId, onChange,f ,props}:{props?:any,name:any, label:string, countryId:string,onChange:any, f:any}) => {
+export const StateSelectV3 = ({ name, label, countryId, onChange,f ,required=false,props}:{required?:boolean,props?:any,name:any, label:string, countryId:string,onChange:any, f:any}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
   const { data, error } = useSWR(countryId?countryId:null, getStates,{dedupingInterval:5000*60});
 
@@ -100,7 +100,7 @@ export const StateSelectV3 = ({ name, label, countryId, onChange,f ,props}:{prop
   };
 
   return (
-    <Form.Item label={label}  rules={[{ required: true }]} style={{width:"100%"}}>
+    <Form.Item name={name}  rules={[{ required }]} style={{width:"100%"}}>
       <Select 
         showSearch 
         onChange={handleChange}
@@ -163,7 +163,7 @@ export const CitySelectV2 = ({ name, label, stateId, onChange,f ,props}:{props?:
     </Form.Item>
   );
 };
-export const CitySelectV3 = ({ name, label, stateId, onChange,f ,props}:{props?:any,name:any, label:string, stateId:string,onChange:any, f:any}) => {
+export const CitySelectV3 = ({ name, label, stateId, onChange,f ,required=false,props}:{required?:boolean,props?:any,name:any, label:string, stateId:string,onChange:any, f:any}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
   const { data, error } = useSWR(stateId?stateId:null, getCity,{dedupingInterval:5000*60});
   const city = useWatch(name,f)
@@ -183,9 +183,8 @@ export const CitySelectV3 = ({ name, label, stateId, onChange,f ,props}:{props?:
   };
 
   return (
-    <Form.Item label={label}   rules={[{ required: true }]}>
-
-      <Select showSearch onChange={handleChange}
+    <Form.Item name={name} rules={[{ required }]}>
+      <Select showSearch onChange={handleChange} placeholder="Select City"
         options={states.map(state => ({label:state.name, value:state.name,key:state.id}))}
       />
     </Form.Item>

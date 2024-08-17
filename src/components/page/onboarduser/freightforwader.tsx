@@ -14,6 +14,7 @@ import { FormRules, strings } from '@/components/strings'
 import { useRouter, useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import { CheckpointCheck } from '@/components/utils/checkpoint'
+import { signOut } from 'next-auth/react'
 
 function Freightforwader() {
     const [currentStep, setCurrentStep] = useState<number>(0)
@@ -26,6 +27,9 @@ function Freightforwader() {
         }
     }
     useEffect(() => {        
+        if(data?.code === false){
+            signOut()
+        }
         if (data?.data.user.role === "exporter/importer") {
             push("/onboarduser/exporter")
         }
@@ -509,6 +513,35 @@ export const CustomFormUploadV2 = ({ f, name, label, style = false, maxCount = 1
                 action={strings.uploadEndPoint}
                 name="file"
                 data={{ cname: name }}
+                headers={{ Authorization: 'Bearer ' + token }}
+            >
+                <Button block icon={<UploadOutlined />}>Upload File</Button>
+            </Upload>
+        </Form.Item>
+    )
+}
+export const CustomFormUploadV3 = ({ f, name, label, style = false, maxCount = 1, required = false }: { required?: boolean, maxCount?: number, style?: boolean, label: any, name: any, f: FormInstance<any> }) => {
+    const [token, setToken] = useState<any>("")
+    useEffect(() => {
+        getSessionCache()
+            .then(r => setToken(r.user?.email))
+            .catch(r => { })
+    }, [])
+    const props = {
+        onChange: ({ file }: any) => {
+
+            if (file.status == "done") {
+                f.setFieldValue(style ? name : [name, "file"], file.response.file)
+            }
+        },
+        maxCount
+    };
+    return (
+        <Form.Item layout="vertical" name={name} rules={[{ required }]} label={label}>
+            <Upload {...props} className={`upload-0`}
+                action={strings.uploadEndPoint}
+                name="file"
+                data={{ cname: name.join("/") }}
                 headers={{ Authorization: 'Bearer ' + token }}
             >
                 <Button block icon={<UploadOutlined />}>Upload File</Button>

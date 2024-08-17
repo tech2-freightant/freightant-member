@@ -60,7 +60,7 @@ interface UserValue {
 async function fetchUserList(username: string): Promise<any> {  
   return locode(username)
          .then(r=>{
-            return r.data.map((i:any)=>({...i,value:JSON.stringify(i),label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},[${i.Subdivision}] ${i.countryname}`}))
+            return r.data.map((i:any)=>({...i,value:i.id,label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},[${i.Subdivision}] ${i.countryname}`,extra:i}))
          })
          .catch(r=>{
             
@@ -76,7 +76,8 @@ const LocodeSelect = ({change}:{change:any}) => {
       placeholder="Select Port"
       suffixIcon={null}
       fetchOptions={fetchUserList}
-      onChange={(newValue) => {
+      onChange={(newValue:any) => {
+        change(newValue?.value);
         setValue(newValue as UserValue[]);
       }}
       style={{ width: '90%' }}

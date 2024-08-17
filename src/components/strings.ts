@@ -51,6 +51,11 @@ const strings ={
     totalCargo: "Total Cargo",
     perPackage: "Per Package",
     odc:"ODC",
+    EXW: "EXW",
+    FOB: "FOB",
+    FCA: "FCA",
+    FAS: "FAS"
+
 }
 const FormRules = {
     mobile:{min:10,max:11,message: 'Invalid Number'},

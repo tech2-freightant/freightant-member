@@ -14,7 +14,9 @@ const inter = Montserrat({
 });
 
 function updateArray(array:Array<string>|undefined, string:string) {
+  console.log(array);
   if(array){
+    
     const index = array.indexOf(string);
   
     if (index !== -1) {

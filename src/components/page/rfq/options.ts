@@ -116,11 +116,11 @@ export const imoClassOptions = [
 export const cargoCategoryOptions = [
     {
       "label": "Freight all kinds",
-      "range": ""
+      "range": [0,0],
     },
     {
       "label": "Animal & Animal Products",
-      "range": "01-05",
+      "range": [1,5],
       children:[
         {range:1,	label:"Live Animals"},
         {range:2,	label:"Meat and Edible Meat Offal"},
@@ -131,7 +131,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Vegetable Products",
-      "range": "06-14",
+      "range": [6,14],
       children:[
         {range:6,	label:"Live Trees and other Plants; Bulb, Roots and the Like; Cut Flowers and Ornamental Foliage"},
         {range:7,	label:"Vegetable seeds; Edible Vegetables and Certain Roots and Tubers"},
@@ -146,14 +146,14 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Animal and Vegetable Fats and Oils",
-      "range": "15-15",
+      "range": [15,15],
       children:[
         {range:15,label:`Animals or Vegetable Fats and Oils and their Cleavage Products; Prepared Edible Fats; Animal or Vegetable Waxes`}
       ]
     },
     {
       "label": "Foodstuffs, Beverages and Tobacco",
-      "range": "16-24",
+      "range": [16,24],
       children:[
         {range:16, label:`Preparations of Meat, of Fish or of Crustaceans, ollusks or other Aquatic Invertebrates`},
         {range:17, label:`Sugars and Sugar Confectionery`},
@@ -168,7 +168,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Mineral Products",
-      "range": "25-27",
+      "range": [25,27],
       children:[
         {range:25,label:`Salt; Sulphur; Earths and Stone; Plastering Materials, Lime and Cement`},
         {range:26,label:`Ores, Slag and Ash`},
@@ -177,7 +177,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Chemicals & Allied Industries",
-      "range": "28-38",
+      "range": [28,38],
       children:[
         {range:28,label:`Inorganic Chemicals; Organic or Inorganic Compounds of Precious Metals, of Rare-earth Metals, of Radioactive Elements of Isotopes`},
         {range:29,label:`Organic Chemicals`},
@@ -194,7 +194,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Plastics/Rubbers",
-      "range": "39-40",
+      "range": [39,40],
       children:[
         {range:39,label:`Plastics and Articles thereof`},
         {range:40,label:`Rubber and Articles thereof`},
@@ -202,7 +202,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Raw Hides, Skins, Leather, & Furs",
-      "range": "41-43",
+      "range": [41,43],
       children:[
         {range:41,label:`Raw Hides and Skins (Other than Furskins) and Leather`},
         {range:42,label:`Articles of Leather; Saddlery and Harness; Travel Goods, Handbags and similar containers; Articles of Animal Gut (other than Silk-worm Gut)`},
@@ -211,7 +211,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Wood & Wood Products",
-      "range": "44-46",
+      "range": [44,46],
       children:[
         {range:44, label:`Wood and Articles of Wood; Wood Charcoal`},
         {range:45, label:`Cork and Articles of Cork`},
@@ -220,7 +220,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Pulp of Wood and Fibrous Material",
-      "range": "47-49",
+      "range": [47,49],
       children:[
         {range:47, label:`Pulp of Wood or of other Fibrous Cellulosic Material; Recovered (Waste and Scrap) Paper or Paperboard`},
         {range:48, label:`Paper and Paperboard; Article of Paper Pulp, of Paper or of Paperboard Currency Paper (Water-mark Bank Note Paper)`},
@@ -229,7 +229,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Textiles",
-      "range": "50-63",
+      "range": [50,63],
       children:[
         {range:50,label:`Silk`},
         {range:51,label:`Wool, Fine or Coarse Animal Hair, Horse Hair Yarn and Woven Fabric`},
@@ -249,7 +249,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Footwear/Headgear",
-      "range": "64-67",
+      "range": [64,67],
       children:[
         {range:64,label:`Footwear, Gaiters and the Like; Parts of such Articles`},
         {range:65,label:`Headgear and Parts Thereof`},
@@ -259,7 +259,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Stone/Glass",
-      "range": "68-70",
+      "range": [68,70],
       children:[
         {range:68,label:`Articles of Stone, Plaster, Cement, Asbestos, Mica or Similar Materials`},
         {range:69,label:`Ceramic Products`},
@@ -268,14 +268,14 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Precious Stone, Metal, Pearls and Coins",
-      "range": "71-71",
+      "range": [71,71],
       children:[
         {range:71,label:`Natural or Cultured Pearls, Precious or Semi-precious Stones, Precious Metals, Metals Clad with Precious Metal, and Articles thereof; Imitation Jewellery; Coin`}
       ]
     },
     {
       "label": "Base Metals",
-      "range": "72-83",
+      "range": [72,83],
       children:[
         {range:72, label:`Iron and Steel`},
         {range:73, label:`Articles of Iron or Steel`},
@@ -293,7 +293,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Machinery/Electrical",
-      "range": "84-85",
+      "range": [84,85],
       children:[
         {range:84, label:`Nuclear Reactors, Boilers, Machinery and Mechanical Appliances; Parts thereof`},
         {range:85, label:`Electrical Machinery and Equipment and Parts Thereof; Sound Recorders and Reproducers, Television Image and Sound Recorders and Reproducers, and Parts and Accessories of Such Articles`},
@@ -301,7 +301,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Vehicles",
-      "range": "86-89",
+      "range": [86,89],
       children:[
         {range:86,label:`Railway or tramway locomotives, rolling-stock and parts thereof; rail-way or tramway track fixtures and fittings and parts thereof; mechanical (including electro-mechanical) traffic ignaling equipment of all kinds`},
         {range:87,label:`Vehicles other than Railway or Tramway Rolling-stock, and Parts and Accessories thereof`},
@@ -311,7 +311,7 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Precision Instruments",
-      "range": "90-92",
+      "range": [90,92],
       children:[
         {range:90, label:`Optical, photographic, cinematographic, measuring, checking, precision, medical or surgical instruments and apparatus; parts and accessories thereof`},
         {range:91, label:`Clocks and Watches and parts thereof`},
@@ -320,14 +320,14 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Arms and Ammunition",
-      "range": "93-93",
+      "range": [93,93],
       children:[
         {range:93,label:`For Arms and Ammunition; Parts and Accessories thereof`}
       ]
     },
     {
       "label": "Miscellaneous Manufactured Articles",
-      "range": "94-96",
+      "range": [94,96],
       children:[
         {range:94, label:`Furniture; Bedding, Mattresses, Mattress Supports, Cushions and similar stuffed furnishings; Lamps and Lighting Fittings, not elsewhere specified or included; Illuminated signs, Illuminated name-plates and the like; Prefabricated Building`},
         {range:95, label:`Toys, Games and Sports Requisites; Parts and Accessories thereof`},
@@ -336,14 +336,14 @@ export const cargoCategoryOptions = [
     },
     {
       "label": "Works of Art",
-      "range": "97-97",
+      "range": [97,97],
       children:[
         {range:97,label:`Works of Art, Collectors’ Pieces and Antiques`}
       ]
     },
     {
       "label": "Unique US National HS Codes",
-      "range": "98-99",
+      "range": [98,99],
       children:[
         {range:98,	label:`Project Imports; Laboratory Chemicals; Passengers’ Baggage; Personal Importations by Air or Post; Ship Stores`}
       ]
@@ -353,5 +353,19 @@ export const packageTypeOptions = [strings.totalCargo, strings.perPackage]
 
 export const DimsOptions = ["MM","CM","METER","INCH","FT"]
 export const WeightOptions = ["KG","TON"]
+
+export const paymentTermOptions = [
+  {title:`Against`,days:`  BL	BL release against full payment`},
+  {title:`Upon`,days:` Receipt	Payment  due Immediately Upon Delivery of Invoice`},
+  {title:`Prepaid`,days:`Payment in Advance with work order`},
+  {title:`Net   7`,days:`Payment within 7 days of the invoice date`},
+  {title:`Net   14`,days:`Payment within 14 days of the invoice date`},
+  {title:`Net   30`,days:`Payment within 30 days of the invoice date`},
+  {title:`Net   45`,days:`Payment within 45 days of the invoice date`},
+  {title:`Net   60`,days:`Payment within 60 days of the invoice date`},
+  {title:strings.others	,days:`Other`},
+]
+
+export const importIncotermOptions = ["EXW","FOB","FCA","FAS"]
 
 
