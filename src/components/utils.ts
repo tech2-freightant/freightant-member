@@ -13,5 +13,22 @@ const inter = Montserrat({
   display: 'swap',
 });
 
+function updateArray(array:Array<string>|undefined, string:string) {
+  console.log(array);
+  if(array){
+    
+    const index = array.indexOf(string);
+  
+    if (index !== -1) {
+      array.splice(index, 1);
+    } else {
+      array.push(string);
+    }
+  
+    return array;
+  }
+  return []
+}
 
-export {assetsRootPath, errorMessage, validateMessages, inter}
+
+export {assetsRootPath, errorMessage, validateMessages, inter, updateArray}

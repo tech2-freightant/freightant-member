@@ -14,16 +14,32 @@ import { FormRules, strings } from '@/components/strings'
 import { useRouter, useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import { CheckpointCheck } from '@/components/utils/checkpoint'
+import { signOut } from 'next-auth/react'
 
 function Freightforwader() {
     const [currentStep, setCurrentStep] = useState<number>(0)
     const { push } = useRouter()
+    const searchParams = useSearchParams()
     const { data, error, isLoading } = useSWR("/", getUser)
+    const updateCount=(e:number)=>{
+        if(e<currentStep){
+            setCurrentStep(e)
+        }
+    }
     useEffect(() => {        
+        if(data?.code === false){
+            signOut()
+        }
         if (data?.data.user.role === "exporter/importer") {
             push("/onboarduser/exporter")
         }
     }, [data])
+    useEffect(()=>{
+        let sp = searchParams.get("page")
+        if(sp){
+            setCurrentStep(+sp)
+        }
+    },[searchParams])
     if (isLoading) {
         return (
             <div className="d-flex justify-content-center align-items-center p-5">
@@ -32,7 +48,7 @@ function Freightforwader() {
         )
     }
     return (
-        <OnboardUserUI sideUI={<SideUI step={currentStep} />}>
+        <OnboardUserUI sideUI={<SideUI step={currentStep} updateSteps={updateCount} />}>
             <div className={currentStep === 0 ? "" : "d-none"} style={{ transition: "all 0.5" }}>
                 <KYCForm setCurrentStep={setCurrentStep} />
             </div>
@@ -99,7 +115,7 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
             .then(r => {
                 if (r.code) {
                     if (+countryId !== 101) {
-                        push("?global=" + values.country)
+                        push("?global=" + values.country+"&page=" + 1)
                     }
                     setCurrentStep(i => ++i)
                 }
@@ -224,13 +240,13 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
 
                 <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="Escalation/Emergency Contact Numbers" name="emergencyContactNumber" rules={[{ required: true }]}>
-                        <Select mode={"tags"} showSearch={false} />
+                        <Select mode={"tags"} showSearch={false} notFoundContent={<></>} />
                     </Form.Item>
                 </Col>
 
                 <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="Escalation/Emergency Email IDs" name="emergencyContactEmail" rules={[{ required: true }]}>
-                        <Select mode={"tags"} showSearch={false} />
+                        <Select mode={"tags"} showSearch={false} notFoundContent={<></>} />
                     </Form.Item>
                 </Col>
 
@@ -276,7 +292,7 @@ const LicenseForm = ({ name, label, isLicense, f }: { name: any, label: String, 
                     <Upload
                         onChange={onChange}
                         multiple
-                        accept=".pdf,.doc,.docx"
+                        accept=".pdf,.png,.jpeg,.jpg,.webp"
                         className='upload-0'
                     >
                         <Button disabled={!status} block icon={<UploadOutlined />}>Upload File</Button>
@@ -328,13 +344,14 @@ const Licenses = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<
             .then(r => {
                 if (r.code) {
                     setCurrentStep(i => ++i)
+                    push("?page=2")
                 }
             })
             .catch(r => { console.log(r) })
     }
 
     useEffect(() => {
-        setGlobal(data?.data.user.countryCode == 91)
+        setGlobal(data?.data?.user.countryCode!==91)
     }, [data])
     return (
         <div>
@@ -343,27 +360,27 @@ const Licenses = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<
                 form={form}
                 onFinish={onFinish}
             >
-                <Card className='m-1 my-3'>
+                <Card className='m-1 my-3' title={<h5 className='p-0 m-0 text-primary1'>Group 1</h5> } >
                     <LicenseForm f={form} name={"mtoMultimodalTransportLicense"} label={"MTO / Multimodal transport license"} />
-                    <LicenseForm f={form} name={"iata"} label={"IATA"} />
-                    <LicenseForm f={form} name={"fiata"} label={"FIATA"} />
+                    <LicenseForm f={form} isLicense name={"iata"} label={"IATA"} />
+                    <LicenseForm f={form} isLicense name={"fiata"} label={"FIATA"} />
                     <LicenseForm f={form} name={"fmcFreightForwarder"} label={"FMC [ Freight Forwarder ]"} />
                     <LicenseForm f={form} name={"nvooc"} label={"NVOCC"} />
                 </Card>
-                <Card className='m-1 my-2'>
+                <Card className='m-1 my-2' title={<h5 className='p-0 m-0 text-primary1'>Group 2</h5> }>
                     <LicenseForm f={form} isLicense name={"customsAssociationMembership"} label={"Forwarder / Customs Association Membership"} />
                     <LicenseForm f={form} isLicense name={"chamberOfCommerceTradeAssociation"} label={"Chamber of Commerce / Trade association"} />
                     <LicenseForm f={form} isLicense name={"wca"} label={"WCA"} />
                     <LicenseForm f={form} isLicense name={"jctrans"} label={"JC Trans"} />
                 </Card>
-                <Card className='m-1 my-2'>
+                <Card className='m-1 my-2' title={<h5 className='p-0 m-0 text-primary1'>Group 3</h5> }>
                     <LicenseForm f={form} name={"customLicense"} label={"Custom License"} />
-                    <LicenseForm f={form} name={"aeo"} label={"AEO"} />
-                    <LicenseForm f={form} name={"dgHaz"} label={"DG / Haz Cargo"} />
-                    <LicenseForm f={form} name={"tapa"} label={"TAPA"} />
-                    <LicenseForm f={form} name={"basc"} label={"BASC"} />
-                    <LicenseForm f={form} name={"ctpat"} label={"C-TPAT"} />
-                    <LicenseForm f={form} name={"iso9001"} label={"ISO 9001"} />
+                    <LicenseForm isLicense f={form} name={"aeo"} label={"AEO"} />
+                    <LicenseForm isLicense f={form} name={"dgHaz"} label={"DG / Haz Cargo"} />
+                    <LicenseForm isLicense f={form} name={"tapa"} label={"TAPA"} />
+                    <LicenseForm isLicense f={form} name={"basc"} label={"BASC"} />
+                    <LicenseForm isLicense f={form} name={"ctpat"} label={"C-TPAT"} />
+                    <LicenseForm isLicense f={form} name={"iso9001"} label={"ISO 9001"} />
                 </Card>
                 {global ?
                     <KYCUploadFormIndia f={form} /> :
@@ -467,6 +484,64 @@ export const CustomFormUpload = ({ f, name, label, style = false, maxCount = 1, 
                 action={strings.uploadEndPoint}
                 name="file"
                 data={{ cname: name }}
+                headers={{ Authorization: 'Bearer ' + token }}
+            >
+                <Button block icon={<UploadOutlined />}>Upload File</Button>
+            </Upload>
+        </Form.Item>
+    )
+}
+export const CustomFormUploadV2 = ({ f, name, label, style = false, maxCount = 1, required = false }: { required?: boolean, maxCount?: number, style?: boolean, label: any, name: any, f: FormInstance<any> }) => {
+    const [token, setToken] = useState<any>("")
+    useEffect(() => {
+        getSessionCache()
+            .then(r => setToken(r.user?.email))
+            .catch(r => { })
+    }, [])
+    const props = {
+        onChange: ({ file }: any) => {
+
+            if (file.status == "done") {
+                f.setFieldValue(style ? name : [name, "file"], file.response.file)
+            }
+        },
+        maxCount
+    };
+    return (
+        <Form.Item layout="vertical" name={name} rules={[{ required }]} label={label}>
+            <Upload {...props} className={`upload-0`}
+                action={strings.uploadEndPoint}
+                name="file"
+                data={{ cname: name }}
+                headers={{ Authorization: 'Bearer ' + token }}
+            >
+                <Button block icon={<UploadOutlined />}>Upload File</Button>
+            </Upload>
+        </Form.Item>
+    )
+}
+export const CustomFormUploadV3 = ({ f, name, label, style = false, maxCount = 1, required = false }: { required?: boolean, maxCount?: number, style?: boolean, label: any, name: any, f: FormInstance<any> }) => {
+    const [token, setToken] = useState<any>("")
+    useEffect(() => {
+        getSessionCache()
+            .then(r => setToken(r.user?.email))
+            .catch(r => { })
+    }, [])
+    const props = {
+        onChange: ({ file }: any) => {
+
+            if (file.status == "done") {
+                f.setFieldValue(style ? name : [name, "file"], file.response.file)
+            }
+        },
+        maxCount
+    };
+    return (
+        <Form.Item layout="vertical" name={name} rules={[{ required }]} label={label}>
+            <Upload {...props} className={`upload-0`}
+                action={strings.uploadEndPoint}
+                name="file"
+                data={{ cname: name.join("/") }}
                 headers={{ Authorization: 'Bearer ' + token }}
             >
                 <Button block icon={<UploadOutlined />}>Upload File</Button>
