@@ -30,5 +30,25 @@ function updateArray(array:Array<string>|undefined, string:string) {
   return []
 }
 
+function CBMCalculate(length: number, breadth: number, height: number, dimensionUnit: string): number {
+  
+  const conversionFactors = {
+    MM: 0.001,
+    CM: 0.01,
+    INCH: 0.0254,
+    FT: 0.3048
+  };
 
-export {assetsRootPath, errorMessage, validateMessages, inter, updateArray}
+  // Convert dimensions to meters
+  const convertedLength = length * (conversionFactors[dimensionUnit as keyof typeof conversionFactors] || 1);
+  const convertedBreadth = breadth * (conversionFactors[dimensionUnit as keyof typeof conversionFactors] || 1);
+  const convertedHeight = height * (conversionFactors[dimensionUnit as keyof typeof conversionFactors] || 1);
+
+  // Calculate CBM
+  const CBM = convertedLength * convertedBreadth * convertedHeight;
+
+  return CBM;
+}
+
+
+export {assetsRootPath, errorMessage, validateMessages, inter, updateArray,CBMCalculate}

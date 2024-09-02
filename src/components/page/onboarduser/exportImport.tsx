@@ -419,7 +419,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     </Col>
                     {AEO === "Yes" &&
                         <Col {...responsiveItemLayout} >
-                            <CustomFormUpload required style f={form} label={""} name={"aeo"} />
+                            <CustomFormUpload required style f={form} label={false} name={"aeo"} />
                         </Col>}
                 </Row>
                 <Row gutter={[48, 0]}>
@@ -633,10 +633,10 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
                     <CitySelectV2
                         props={{...field}}
                         name={index}
-                        label="Select Branch State/Province"
+                        label="Select City"
                         stateId={dataList[index]?.stateId}
                         f={setDataList}
-                        onChange={form} />
+                        onChange={(v:string)=>form.setFieldValue(["branches",field.name,"city"],v)} />
                     </Col>                  
                     <Col {...responsiveItemLayout}>
                       <FormItem
@@ -747,4 +747,3 @@ const indianExportOrganizations = [
     "Marine Products Export Development Authority (MPEDA)",
     "Other"
 ];
-  

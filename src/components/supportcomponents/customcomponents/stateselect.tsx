@@ -105,7 +105,7 @@ export const StateSelectV3 = ({ name, label, countryId, onChange,f ,required=fal
         showSearch 
         onChange={handleChange}
         options={states.map(state => ({label:state.name, value:state.name,key:state.id}))}
-        placeholder="Select State"
+        placeholder="Select State / Province"
       />
     </Form.Item>
   );

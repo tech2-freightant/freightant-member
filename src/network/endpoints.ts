@@ -159,3 +159,14 @@ export async function locode(name:string){
       return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
     }
 }
+
+export async function postRfQ(body:any){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance.post(`/rfq/post`,{...body},{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+

@@ -19,6 +19,7 @@ export const reeferCargoOptions = [strings.frozen,strings.chilled,strings.pharma
 export const crossBorderTruckCargoOptions = [strings.general,strings.hazardous,strings.odc]
 export const gaugestatusOptions = [strings.ingauge,strings.outgauge]
 export const stuffingLocationTypeOptions = [strings.factoryStuffing,strings.portCFSStuffing]
+export const destuffingLocationTypeOptions = ["Factory Destuffing","Port / CFS Destuffing"]
 export const openBodytrucksOptions = [
   "PICKUP:1 TON",
   "TATA ACE: 800 KGS",
@@ -355,8 +356,8 @@ export const DimsOptions = ["MM","CM","METER","INCH","FT"]
 export const WeightOptions = ["KG","TON"]
 
 export const paymentTermOptions = [
-  {title:`Against`,days:`  BL	BL release against full payment`},
-  {title:`Upon`,days:` Receipt	Payment  due Immediately Upon Delivery of Invoice`},
+  {title:`Against BL`,days:`BL release against full payment`},
+  {title:`Upon Receipt`,days:`Payment  due Immediately Upon Delivery of Invoice`},
   {title:`Prepaid`,days:`Payment in Advance with work order`},
   {title:`Net   7`,days:`Payment within 7 days of the invoice date`},
   {title:`Net   14`,days:`Payment within 14 days of the invoice date`},

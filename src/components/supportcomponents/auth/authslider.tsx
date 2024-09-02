@@ -63,7 +63,7 @@ const AuthCarousel: React.FC = () => {
                 style={{ backgroundImage: `url(${slide.imageUrl})`,backgroundSize:"cover",height:"80vh", borderEndStartRadius:"50px",borderTopRightRadius:"60px" }}
             >                
                 <div className="slide-content p-2">
-                    <Text className='text-light'>{slide.title}</Text>
+                    <Text className='text-light fw-bolder'>{slide.title}</Text>
                     <Title level={3} className='text-light'>{slide.description}</Title>
                     <br />
                     <Space className="">

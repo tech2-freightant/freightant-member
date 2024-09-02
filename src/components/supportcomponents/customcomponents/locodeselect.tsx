@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Select, Spin } from 'antd';
 import type { SelectProps } from 'antd';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash.debounce';
 import { locode } from '@/network/endpoints';
 
 export interface DebounceSelectProps<ValueType = any>

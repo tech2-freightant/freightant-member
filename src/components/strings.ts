@@ -1,5 +1,5 @@
 const strings ={
-    uploadEndPoint: "http://localhost:5000/api/user/upload",
+    uploadEndPoint: process.env.BACKEND_HOST+"/api/user/upload",
     textPrimary1:"#0A0049",
     textPrimary2: "#6A37F4",
     seaFCL:"Sea-FCL",

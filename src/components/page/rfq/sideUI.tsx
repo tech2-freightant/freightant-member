@@ -1,12 +1,12 @@
 import { assetsRootPath } from "@/components/utils";
 import { Steps, Typography } from "antd";
-import React, { createContext, useReducer, Dispatch, Reducer } from 'react';
+import React, { createContext, useReducer, Dispatch, Reducer, useContext, ReactNode } from 'react';
 
 export const RFQSideUI = ({ step,updateSteps }: { step: number,updateSteps:(e:number)=>void }) => {
-    const [state, dispatch] = useReducer(reducer, initialState);
+  const o = useContext(ContextRFQ)
     
   return (
-    <ContextRFQ.Provider value={{ state, dispatch }}>
+    
       
         <div className='p-1 p-md-3'>
             <div className="d-none d-md-block freightant-logo d-flex justify-content-center my-2 mb-5">
@@ -19,18 +19,18 @@ export const RFQSideUI = ({ step,updateSteps }: { step: number,updateSteps:(e:nu
                 direction="vertical"
                 current={step}
                 onChange={updateSteps}
-                items={state}
+                items={o.state}
                 />
         </div>
-    </ContextRFQ.Provider>
     );
 }
 
 
 interface StepStruct {
-    title: string;
+    title: string | ReactNode;
     status: 'finish' | 'wait';
-    description?: string; // Optional description
+    description?: string;
+    style?: any;
 }
 
 interface ContextType {
@@ -40,65 +40,119 @@ interface ContextType {
 
 interface ContextAction {
   type: 'UPDATE_STEP_STATUS';
-  payload: { title: string; status: 'finish' | 'wait', description?:string};
+  payload: { title: string|ReactNode; status: 'finish' | 'wait', description?:string, style?: any};
 }
 
 export const ContextRFQ = createContext<ContextType>({} as ContextType);
 
-const initialState: StepStruct[] = [
+export const initialStateRFQ: StepStruct[] = [
     {
-        title: 'Mode of Shipment',
+        title: <h6 className="text-primary2">Mode of Shipment</h6>,
         description: "Pending",
-        status: "finish",
+        status: "wait",
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Trade Type',
+        title: <h6 className="text-primary2">Trade Type</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5 ,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Incoterm',
+        title: <h6 className="text-primary2">Incoterm</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Port Pair & Free Time', 
+        title: <h6 className="text-primary2">Port Pair & Free Time</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Container & Cargo Details',
+        title: <h6 className="text-primary2">Container & Cargo Details</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Add on Services (POL)',
+        title: <h6 className="text-primary2">Add on Services</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Payment Terms',
+        title: <h6 className="text-primary2">Payment Terms</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Remarks',
+        title: <h6 className="text-primary2">Remarks</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
     {
-        title: 'Point of contact',
+        title: <h6 className="text-primary2">Point of contact</h6>,
         description: "Pending",
-        status: 'wait'
+        status: 'wait',
+        style:{
+          paddingBottom: 25,
+          lineHeight:0.1,
+          paddingTop:5,
+          color: "#F3F6FF"
+        }
     },
 ];
 
-const reducer: Reducer<StepStruct[], ContextAction> = (state, action) => {
+export const reducerRFQ: Reducer<StepStruct[], ContextAction> = (state, action) => {
   switch (action.type) {
     case 'UPDATE_STEP_STATUS':
       return state.map((step) => {
         if (step.title === action.payload.title) {
-          return { ...step, status: action.payload.status };
+          return { ...step, status: action.payload.status, description: action.payload.status?"Completed":"Pending" };
         }
         return step;
       });

@@ -315,3 +315,21 @@ const variants = {
       },
     },
   };
+
+  export const variants2 = {
+    small: {
+      scale: 0.5,
+      rotate: 0,
+      opacity:0
+    },
+    big: {
+      scale: 1,
+      rotate: 360,
+      opacity:1,
+      transition: {
+        duration: 1.2,
+        ease: 'easeInOut',
+        repeat: Infinity, repeatDelay: 5
+      },
+    },
+  };

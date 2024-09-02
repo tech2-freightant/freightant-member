@@ -479,7 +479,7 @@ export const CustomFormUpload = ({ f, name, label, style = false, maxCount = 1, 
         maxCount
     };
     return (
-        <Form.Item name={name} rules={[{ required }]} label={<p className='p-0 m-0 text-muted'>{label}</p>}>
+        <Form.Item name={name} rules={[{ required }]} label={label&&<p className='p-0 m-0 text-muted'>{label}</p>}>
             <Upload {...props} className={`upload-0`}
                 action={strings.uploadEndPoint}
                 name="file"
