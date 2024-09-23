@@ -38,7 +38,6 @@ export type signupType2 = {
     ,token:any,
     setToken:Dispatch<SetStateAction<null>>,
     value:any
-
   }
 
   export type CountryListType = {

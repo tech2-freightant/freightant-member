@@ -54,7 +54,23 @@ const strings ={
     EXW: "EXW",
     FOB: "FOB",
     FCA: "FCA",
-    FAS: "FAS"
+    FAS: "FAS",
+    oceanfreight:"Ocean freight",
+    bl:"BL",
+    cfsTerminal:"CFS / Terminal",
+    custom: "Customs",
+    transportations:"Transportations",
+    shippingLine:"Shipping Line",
+    airFreight:"Air Freight",
+    airline:"Airline",
+    airport:"Airport",
+    trucking:"Trucking",
+    portCwc:"Port / CWC",
+    govtPass:"Govt Pass",
+    accepted:"Accepted",
+    decline:"Decline",
+
+
 
 }
 const FormRules = {

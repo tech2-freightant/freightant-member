@@ -3,6 +3,7 @@ import { Select, Spin } from 'antd';
 import type { SelectProps } from 'antd';
 import debounce from 'lodash.debounce';
 import { locode } from '@/network/endpoints';
+import { title } from 'process';
 
 export interface DebounceSelectProps<ValueType = any>
   extends Omit<SelectProps<ValueType | ValueType[]>, 'options' | 'children'> {
@@ -11,7 +12,7 @@ export interface DebounceSelectProps<ValueType = any>
 }
 
 function DebounceSelect<
-  ValueType extends { key?: string; label: React.ReactNode; value: string | number } = any,
+  ValueType extends { key?: string; label: React.ReactNode; value: string | number ,extra:any } = any,
 >({ fetchOptions, debounceTimeout = 400, ...props }: DebounceSelectProps<ValueType>) {
   const [fetching, setFetching] = useState(false);
   const [options, setOptions] = useState<ValueType[]>([]);
@@ -28,7 +29,7 @@ function DebounceSelect<
         if (fetchId !== fetchRef.current) {
           return;
         }
-
+        
         setOptions(newOptions);
         setFetching(false);
       });
@@ -60,23 +61,31 @@ interface UserValue {
 async function fetchUserList(username: string): Promise<any> {  
   return locode(username)
          .then(r=>{
-            return r.data.map((i:any)=>({...i,value:i.id,label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},[${i.Subdivision}] ${i.countryname}`,extra:i}))
+            return r.data.map((i:any)=>({...i,key:(Math.random()*1000).toFixed(0),value:i.id,label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},[${i.Subdivision}] ${i.countryname}`,title:i}))
          })
          .catch(r=>{
             
          })   ;
 }
 
-const LocodeSelect = ({change}:{change:any}) => {
+const LocodeSelect = ({change,changeLocation,wholeValue,...props}:{wholeValue?:any,props?:any,mode?:any,change:any,changeLocation?:any}) => {
   const [value, setValue] = useState<UserValue[]>([]);
-
+  console.log(props);
+  
   return (
     <DebounceSelect
       value={value}
+      {...props}
       placeholder="Select Port"
       suffixIcon={null}
       fetchOptions={fetchUserList}
       onChange={(newValue:any) => {
+        if(changeLocation){
+          changeLocation(newValue?.title.countryname,newValue?.title.statename);
+        }
+        if(wholeValue){
+          wholeValue(newValue)
+        }
         change(newValue?.value);
         setValue(newValue as UserValue[]);
       }}

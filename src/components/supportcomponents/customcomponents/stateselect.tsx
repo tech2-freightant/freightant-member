@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { getCity, getCountry, getStates } from '@/network/endpoints';
 import { useWatch } from 'antd/es/form/Form';
 
-export const CountrySelect = ({ name, label,onChange, f ,required=false,props}:{required?:boolean,props?:any,name:any, label:string,onChange:any, f:FormInstance<any>}) => {
+export const CountrySelect = ({ name, onChange, f ,required=false,...props}:{required?:boolean,props?:any,name:any, onChange:any, f:FormInstance<any>}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
   const { data, error } = useSWR( "/",getCountry,{dedupingInterval:5000*60});
 
@@ -21,7 +21,7 @@ export const CountrySelect = ({ name, label,onChange, f ,required=false,props}:{
   };
 
   return (  
-    <Form.Item rules={[{required}]} name={name}>
+    <Form.Item rules={[{required}]} name={name} {...props}>
       <Select 
         style={{width: "100%",}}
         showSearch 
@@ -30,6 +30,31 @@ export const CountrySelect = ({ name, label,onChange, f ,required=false,props}:{
         placeholder="Select country"
       />
     </Form.Item>
+  );
+};
+export const CountrySelectV2 = ({onChange,...props}:{props?:any,onChange:any}) => {
+  const [states, setStates] = useState<{name:string,id:string}[]>([]);
+  const { data, error } = useSWR( "/",getCountry,{dedupingInterval:5000*60});
+
+  useEffect(() => {
+    if (data && data.data) {
+      setStates(data.data);
+    }
+    
+  }, [data]);
+
+  const handleChange = (value:any) => {
+    onChange(states.filter(state => state.name === value)[0])
+  };
+
+  return (  
+      <Select {...props}
+        style={{width: "100%",}}
+        showSearch 
+        onChange={handleChange}
+        options={states.map(state => ({label:state.name, value:state.name,key:state.id}))}
+        placeholder="Select country"
+      />
   );
 };
 const StateSelect = ({ name, label, countryId, onChange,f ,props}:{props?:any,name:any, label:string, countryId:string,onChange:any, f:FormInstance<any>}) => {
@@ -108,6 +133,26 @@ export const StateSelectV3 = ({ name, label, countryId, onChange,f ,required=fal
         placeholder="Select State / Province"
       />
     </Form.Item>
+  );
+};
+export const StateSelectV4 = ({countryId, onChange,...props}:{props?:any, countryId:string,onChange:any,}) => {
+  const [states, setStates] = useState<{name:string,id:string}[]>([]);
+  const { data, error } = useSWR(countryId?countryId:null, getStates,{dedupingInterval:5000*60});
+
+  useEffect(() => {
+    if (data && data.data) {
+      setStates(data.data);
+    }
+  }, [data]);
+
+
+  return (
+      <Select {...props}
+        showSearch 
+        onChange={onChange}
+        options={states.map(state => ({label:state.name, value:state.name,key:state.id}))}
+        placeholder="Select State / Province"
+      />
   );
 };
 

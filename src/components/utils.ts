@@ -50,5 +50,8 @@ function CBMCalculate(length: number, breadth: number, height: number, dimension
   return CBM;
 }
 
+export const locodeFormatedString = (locodeObj:any):string=>{
+  return `${locodeObj?.emoji} ${locodeObj?.Country}${locodeObj?.Location} - ${locodeObj?.Name},[${locodeObj?.Subdivision}] ${locodeObj?.countryname}`
+} 
 
 export {assetsRootPath, errorMessage, validateMessages, inter, updateArray,CBMCalculate}

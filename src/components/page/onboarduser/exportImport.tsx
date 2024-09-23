@@ -396,7 +396,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     </Col>
                 </Row>
 
-                <FormItem label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
+                <Form.Item label="Export promotion organization membership certificate ( APEDA / MPEDA / CAPEXIL etc)">
                     <Row gutter={[48, 0]}>
                         <Col {...responsiveItemLayout} >
                             <Form.Item name={"exportPromotionOrganisationMembership"}>
@@ -407,7 +407,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                             <CustomFormUpload required style f={form} label={""}  name={"exportPromotionOrganisationMembershipDocument"}/>
                         </Col>
                     </Row>
-                </FormItem>
+                </Form.Item>
                 <Row gutter={[48, 0]}>
                     <Col span={24} >
                         <Form.Item name={"AEO"} label="AEO Certificate">

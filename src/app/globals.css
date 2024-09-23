@@ -105,18 +105,26 @@ a {
     color-scheme: dark;
   }
 } */
-
 .text-primary2{
   color: #0A0049 !important;
 }
 .text-primary1{
   color: #6A37F4 !important;
 }
+.text-primary3{
+  color: #451197;
+}
+.border-primary2{
+  border-color: #6937f46c !important;
+}
 .bg-primary2{
   color: #0A0049;
 }
+.bg-primary3{
+  background-color: #A89CF7;
+}
 .bg-shade{
-  color: #F3F6FF;
+  background-color: #F3F6FF;
 }
 .upload-0 > .ant-upload-select{
   display: block !important;
@@ -128,4 +136,11 @@ a {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.demo-logo-vertical{
+  height: 32px;
+  margin: 16px;
+  background: rgba(255,255,255,.2);
+  border-radius: 6px;
 }

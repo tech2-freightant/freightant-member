@@ -18,7 +18,7 @@ const handler = NextAuth({
                 console.log(res);
                 
                 if (res.code ) {
-                  return { id:"",email: res.data.token}
+                  return { id:"",email: res.data.token,name: res.data.name}
                 }else{
                   throw new Error(res?.message);
                 }
@@ -29,6 +29,9 @@ const handler = NextAuth({
             }
           })
       ],
+      session:{
+        maxAge: 7*24*60*60
+      }
 })
 
 export { handler as GET, handler as POST }

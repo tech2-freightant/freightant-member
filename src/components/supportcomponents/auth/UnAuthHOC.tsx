@@ -1,8 +1,8 @@
 "use client"
-import { DefaultSessionLocal, getSessionCache } from '@/network/endpoints'
+import { DefaultSessionLocal, getSessionCache, verifytoken } from '@/network/endpoints'
 import instance from '@/network/instance'
 import { Spin } from 'antd'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
@@ -63,20 +63,31 @@ export function AuthHOC(WrappedComponent: React.FC) {
     
     const router= useRouter()
     useEffect(()=>{
-      
-      getSessionCache()
-      .then(session=>{
-        if(session?.user){
-          setSession(session)
+      // getSessionCache()
+      // .then(session=>{
+      //   if(session?.user){
+      //     setSession(session)
+      //     setLoading(false)
+      //   }else{
+      //     router.replace("/auth/signin")
+      //   }
+      // })
+      // .catch(()=>{
+      //   router.replace("/auth/signin")
+      // })
+      let checkLogin = async()=>{
+        let cacheSessions = await getSessionCache()
+        let vtoken = await verifytoken()
+        console.log(vtoken);
+        
+        if(vtoken.code){
+          setSession(cacheSessions)
           setLoading(false)
         }else{
-          router.replace("/auth/signin")
+          signOut({callbackUrl:"/auth/signin"})
         }
-      })
-      .catch(()=>{
-        router.replace("/auth/signin")
-      })
-      .finally()
+      }
+      checkLogin()
     },[])
     if(loading){
         return (

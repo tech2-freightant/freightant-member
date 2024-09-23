@@ -43,12 +43,12 @@ const defaultValue = {
   freeTimeDP:10,
   freeTimeLP:10,
   pointOfContact:[{}],
+  readyDate:dayjs(Date.now()),
   container:[{
     typee:strings.standardContainers,
     name:strings['20ft'],
     quantity:1,
     seats:1,
-    readyDate:dayjs(Date.now()),
     cargo:{
       typee:standardCargoOptions[0]
     }
@@ -73,6 +73,8 @@ const PostRFQUI=()=>{
   const showContact = useWatch("showContact",{form,preserve:true})
   const container = useWatch("container",{form,preserve:true})
   const addOnService = useWatch("addOnService",{form,preserve:true})
+  const placeOfLoading = useWatch("placeOfLoading",{form,preserve:true})
+  const placeOfUnLoading = useWatch("placeOfUnLoading",{form,preserve:true})
   const cargoDetail = useWatch("cargoDetail",form)
   const paymentTerms = useWatch("paymentTerms",form)
   const dischargePort = useWatch("dischargePort",form)
@@ -89,21 +91,23 @@ const PostRFQUI=()=>{
       let cbm = 0;
       let gw = 0
       v.forEach((element:any)=> {
-        let {dimensions,grossWeight} = element
+        let {dimensions,weight} = element
+        console.log(dimensions);
+        
         cbm= +cbm + +CBMCalculate(
           dimensions.length?dimensions.length:1
-          ,dimensions.width?dimensions.width:1
+          ,dimensions.breadth?dimensions.breadth:1
           ,dimensions.height?dimensions.height:1
           ,unit)
-        gw = +gw + +grossWeight?grossWeight:0
+        gw = +gw + +weight?weight:0
       });
       form.setFieldValue(["cargoDetail","totalCBM"],cbm)
-      form.setFieldValue(["cargoDetail","totalGrossWeight"],gw)
+      // form.setFieldValue(["cargoDetail","totalGrossWeight"],gw)
       return
       
     }
     let l = form.getFieldValue([...name,...["length"]]);
-    let b = form.getFieldValue([...name,...["width"]]);
+    let b = form.getFieldValue([...name,...["breadth"]]);
     let h = form.getFieldValue([...name,...["height"]]);
     
     if(l && b && h){
@@ -114,8 +118,8 @@ const PostRFQUI=()=>{
     let v = form.getFieldValue(name)
     let gw = 0
     v.forEach((element:any)=> {
-      let {dimensions,grossWeight} = element
-      gw = +gw + +(grossWeight?grossWeight:0)
+      let {dimensions,weight} = element
+      gw = +gw + +(weight?weight:0)
     });
     form.setFieldValue(["cargoDetail","totalGrossWeight"],gw)
     return
@@ -198,9 +202,17 @@ const PostRFQUI=()=>{
       
     }).finally(() => {setformLoading(false)});
   }
+
+  const FinishFailed = (errorFields:any) => {
+    if(errorFields?.errorFields.length<3){
+      errorFields?.errorFields.forEach((field:any) =>{
+        message.error(field.errors[0])
+      })
+    }
+  }
   useEffect(()=>{
-    // console.log(form.getFieldValue("addOnService"));    
-  },[addOnService])
+    console.log(placeOfLoading);    
+  },[placeOfLoading])
   
   useEffect(()=>{
     form.setFieldsValue(defaultValue)
@@ -210,6 +222,7 @@ const PostRFQUI=()=>{
         <Form 
           form={form}
           onFinish={onFinished}
+          onFinishFailed={FinishFailed}
           layout='vertical'
         >
           <Row gutter={[16,16]} justify="space-around">
@@ -280,7 +293,6 @@ const PostRFQUI=()=>{
                                 f={form}
                                 name={["placeOfLoading", "country"]}
                                 onChange={(e: any) => {setCountryID(e);form.setFieldsValue({placeOfLoading:{state:null,city:null,address:null}})}}
-                                label=""
                                 required={true}
                               />
                             </Col>
@@ -320,8 +332,17 @@ const PostRFQUI=()=>{
                   <>
                     <Col {...layParams} lg={13}>
                       <Form.Item  label="Port of Loading" name={"loadingPort"} layout="vertical" rules={[{required:true}]}>
-                        <LocodeSelect change={(e:any)=>form.setFieldValue("loadingPort",e)} />
+                        <LocodeSelect 
+                          change={(e:any)=>form.setFieldValue("loadingPort",e)}
+                          wholeValue={(e:any)=>form.setFieldValue("loadingPortObj",e?.title)}
+                          changeLocation={(country:string,state:string)=>{
+                            form.setFieldValue(["placeOfLoading","country"],country)
+                            form.setFieldValue(["placeOfLoading","state"],state)
+                          }}
+                          />
                       </Form.Item>
+                      <Form.Item name={"loadingPortObj"} noStyle/>
+                      <Form.Item name={"placeOfLoading"} noStyle/>
                     </Col>
                     <Col {...layParams}>                  
                       {(modeOfShipment===strings.seaFCL||modeOfShipment===strings.crossBorderTrucking)&&
@@ -342,8 +363,16 @@ const PostRFQUI=()=>{
                     </Col>
                     <Col {...layParams} lg={13}>
                       <Form.Item  name={"dischargePort"} label={"Port of Discharge"} layout="vertical" rules={[{required:true}]}>
-                        <LocodeSelect change={(e:any)=>form.setFieldValue("dischargePort",e)} />
+                        <LocodeSelect
+                         change={(e:any)=>form.setFieldValue("dischargePort",e)}
+                         wholeValue={(e:any)=>form.setFieldValue("dischargePortObj",e?.title)}
+                         changeLocation={(country:string,state:string)=>{
+                          form.setFieldsValue({placeOfUnLoading:{country,state}})
+                        }}
+                         />
                       </Form.Item>
+                      <Form.Item name={"dischargePortObj"} noStyle/>
+                      <Form.Item name={"placeOfUnLoading"} noStyle/>
                     </Col>
                     <Col {...layParams}>                  
                       {(modeOfShipment===strings.seaFCL||modeOfShipment===strings.crossBorderTrucking)&&
@@ -379,7 +408,6 @@ const PostRFQUI=()=>{
                             f={form}
                             name={["placeOfUnLoading", "country"]}
                             onChange={(e: any) => {setCountryID(e);form.setFieldsValue({placeOfUnLoading:{state:null,city:null,address:null}})}}
-                            label=""
                           />
                         </Col>
                         <Col {...layParams2}>
@@ -430,7 +458,7 @@ const PostRFQUI=()=>{
                       <Col {...layParams}>
                         <Form.Item name={["cargoDetail", "packageType"]} label="Enter details by" layout="vertical">
                           <Radio.Group options={packageTypeOptions} value={cargoDetail?.packageType} onChange={(e) => {
-                            form.setFieldValue(["cargoDetail", "packageType"], e.target.value), console.log(e.target.value);
+                            form.setFieldValue(["cargoDetail", "packageType"], e.target.value)
                             if (e.target.value === strings.totalCargo) {
                               form.setFieldValue(["cargoDetail", "packageQuantity"], 0)
                             }
@@ -461,10 +489,14 @@ const PostRFQUI=()=>{
                         }
                       </Col>
                       <Col {...layParams}>
-                        <Form.Item label="Units of Measurement" layout="vertical">
+                        <Form.Item label="Units of Measurement" layout="vertical" name={"cargoDetail"}>
                           <Space.Compact style={{ width: "100%" }}>
-                            <Select options={DimsOptions.map(d => ({ labe: d, value: d }))} placeholder="Dimension" onChange={e => form.setFieldValue(["cargoDetail", "measurement1"], e)} />
-                            <Select options={WeightOptions.map(d => ({ labe: d, value: d }))} placeholder="Weight" onChange={e => form.setFieldValue(["cargoDetail", "measurement2"], e)} />
+                            <Form.Item name={"measurement1"} noStyle>
+                              <Select options={DimsOptions.map(d => ({ labe: d, value: d }))} placeholder="Dimension" onChange={e => form.setFieldValue(["cargoDetail", "measurement1"], e)} />
+                            </Form.Item>
+                            <Form.Item name={"measurement2"} noStyle>
+                              <Select options={WeightOptions.map(d => ({ labe: d, value: d }))} placeholder="Weight" onChange={e => form.setFieldValue(["cargoDetail", "measurement2"], e)} />
+                            </Form.Item>
                           </Space.Compact>
                         </Form.Item>
                       </Col>
@@ -478,7 +510,7 @@ const PostRFQUI=()=>{
                                     <Form.Item name={["cargoDetail", "packageDetail", p,"dimensions","length"]}>
                                       <Input placeholder="L" style={{ textAlign: "center" }} onChange={()=>calculateCBM(["cargoDetail","packageDetail"],true)} />
                                     </Form.Item>
-                                    <Form.Item name={["cargoDetail", "packageDetail", p,"dimensions","width"]}>
+                                    <Form.Item name={["cargoDetail", "packageDetail", p,"dimensions","breadth"]}>
                                       <Input placeholder="B" style={{ textAlign: "center" }} onChange={()=>calculateCBM(["cargoDetail","packageDetail"],true)} />
                                     </Form.Item>
                                     <Form.Item name={["cargoDetail", "packageDetail", p,"dimensions","height"]}>
@@ -488,7 +520,7 @@ const PostRFQUI=()=>{
                                 </Form.Item>
                               </Col>
                               <Col {...layParams}>
-                                <Form.Item name={["cargoDetail", "packageDetail", p, "grossWeight"]} label={`Gross Weight/Package`} rules={[{ required: true }]} layout="vertical">
+                                <Form.Item name={["cargoDetail", "packageDetail", p, "weight"]} label={`Gross Weight/Package`} rules={[{ required: true }]} layout="vertical">
                                   <Input placeholder="Weight" style={{ textAlign: "center" }} onChange={()=>calculateTotalGrossWeight(["cargoDetail","packageDetail"])} />
                                 </Form.Item>
                               </Col>
@@ -582,7 +614,7 @@ const PostRFQUI=()=>{
                                 <Form.Item name={["cargoDetail","dimensions","length"]}>
                                   <Input placeholder="L" style={{ textAlign: "center" }} />
                                 </Form.Item>
-                                <Form.Item name={["cargoDetail","dimensions","width"]}>
+                                <Form.Item name={["cargoDetail","dimensions","breadth"]}>
                                   <Input placeholder="B" style={{ textAlign: "center" }} />
                                 </Form.Item>
                                 <Form.Item name={["cargoDetail","dimensions","height"]}>
@@ -606,7 +638,7 @@ const PostRFQUI=()=>{
                                 <Row gutter={[8,0]} key={iIndex+"Ctt"}>
                                   <Col {...layParams} lg={13} md={18}  >
                                     <Form.Item rules={[{ required: true }]} name={[field.name, "typee"]}  layout="vertical">
-                                      <Input disabled value={cargoDetail?.truckType?.[field.name]?.typee} />
+                                      <Input value={cargoDetail?.truckType?.[field.name]?.typee} />
                                     </Form.Item>
                                   </Col>
                                   <Col sm={20} md={20} lg={10} xl={9} xxl={8}>
@@ -659,7 +691,7 @@ const PostRFQUI=()=>{
                                 iIndex===0?
                                 (<Space size={"small"} className='pt-2'>
                                   <Form.Item className='border rounded-pill px-2' label="Cargo Readiness Date" required={false} name={[name,"readyDate"]} rules={[{required:true}]} layout="horizontal">
-                                    <DatePicker onChange={(e,r)=>form.setFieldValue(["container",name,"readyDate"],dayjs(r.toString()))} size="small" styles={{}} style={{ border: 0, fontSize: "10px", paddingRight: "2px", paddingLeft: "2px" }} className='rounded-pill' />
+                                    <DatePicker onChange={(e,r)=>form.setFieldValue("readyDate",dayjs(r.toString()))} size="small" styles={{}} style={{ border: 0, fontSize: "10px", paddingRight: "2px", paddingLeft: "2px" }} className='rounded-pill' />
                                   </Form.Item>
                                 </Space>):
                                 <Button onClick={() => remove(iIndex)} shape="round">Delete <CloseOutlined className="text-danger fw-bold" /> </Button>
@@ -817,17 +849,17 @@ const PostRFQUI=()=>{
                                         </Form.Item>
                                       </Col>
                                       <Col {...layParams}>
-                                        <Form.Item name={[name,"cargo","dimensionsL"]} label="Dimensions(L) in mm" layout="vertical">
+                                        <Form.Item name={[name,"cargo","dimensions","length"]} label="Dimensions(L) in mm" layout="vertical">
                                           <Input />
                                         </Form.Item>
                                       </Col>
                                       <Col {...layParams}>
-                                        <Form.Item name={[name,"cargo","dimensionsB"]} label="Dimensions(B) in mm" layout="vertical">
+                                        <Form.Item name={[name,"cargo","dimensions","breadth"]} label="Dimensions(B) in mm" layout="vertical">
                                           <Input />
                                         </Form.Item>
                                       </Col>
                                       <Col {...layParams}>
-                                        <Form.Item name={[name,"cargo","dimensionsH"]} label="Dimensions(H) in mm" layout="vertical">
+                                        <Form.Item name={[name,"cargo","dimensions","height"]} label="Dimensions(H) in mm" layout="vertical">
                                           <Input />
                                         </Form.Item>
                                       </Col>
@@ -923,7 +955,6 @@ const PostRFQUI=()=>{
                                 f={form}
                                 name={["addOnService", "placeOfLoading", "country"]}
                                 onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ addOnService: { placeOfLoading: { state: null, city: null, address: null } } }) }}
-                                label=""
                               />
                             </Col>
                             <Col {...layParams2}>
@@ -960,12 +991,15 @@ const PostRFQUI=()=>{
                           <p className="my-2">Truck/Trailer Type</p>
                           <Space direction="vertical">
                             {(addOnService?.truckType ? addOnService?.truckType : []).map((i: any, name: number) => (
-                              <Space key={name+"ctt"} size={"large"} wrap>
-                                <Input disabled value={i.typee} style={{ width: "19.5em" }} />
+                              <Space key={name+"ctt"} size={"large"}>
+                                <Form.Item name={["addOnService", "truckType", name, "typee"]} rules={[{ required: true }]} className='mt-3'>
+                                  <Input value={i.typee} style={{ width: "19.5em" }} onChange={e => form.setFieldValue(["addOnService", "truckType", name, "typee"], e.target.value)} />
+                                </Form.Item>
                                 <Space.Compact className="border p-1 rounded">
                                   <Button onClick={() => form.setFieldValue(["addOnService", "truckType", name, "quantity"], +addOnService?.truckType?.[name]?.quantity - 1 < 1 ? 1 : +addOnService?.truckType?.[name]?.quantity - 1)} size="small" type="primary">-</Button>
                                   <p className="mx-3 my-0" style={{ width: "9px" }} >{addOnService?.truckType?.[name]?.quantity ? addOnService?.truckType?.[name]?.quantity : 0}</p>
                                   <Button onClick={() => form.setFieldValue(["addOnService", "truckType", name, "quantity"], +(addOnService?.truckType?.[name]?.quantity ? addOnService?.truckType?.[name]?.quantity : 0) + 1)} size="small" type="primary">+</Button>
+                                  <Form.Item name={["addOnService", "truckType", name, "quantity"]} noStyle />
                                 </Space.Compact>
                                 <Button danger onClick={() => form.setFieldValue(
                                   ["addOnService", "truckType"],
@@ -1078,7 +1112,6 @@ const PostRFQUI=()=>{
                             f={form}
                             name={["addOnService", "placeOfLoading", "country"]}
                             onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ addOnService: { placeOfLoading: { state: null, city: null, address: null } } }) }}
-                            label=""
                           />
                         </Col>
                         <Col {...layParams2}>
@@ -1116,7 +1149,9 @@ const PostRFQUI=()=>{
                         <Space direction="vertical">
                           {(addOnService?.truckType ? addOnService?.truckType : []).map((i: any, name: number) => (
                             <Space size={"large"} wrap key={name+"tty"}>
-                              <Input disabled value={i.typee} style={{ width: "19.5em" }} />
+                              <Form.Item name={["addOnService", "truckType", name, "typee"]} rules={[{required:true}]} className='mt-3'>
+                                <Input value={i.typee} style={{ width: "19.5em" }} onChange={e=>form.setFieldValue(["addOnService", "truckType", name, "typee"],e.target.value)} />
+                              </Form.Item>
                               <Space.Compact className="border p-1 rounded">
                                 <Button onClick={() => form.setFieldValue(["addOnService", "truckType", name, "quantity"], +addOnService?.truckType?.[name]?.quantity - 1 < 1 ? 1 : +addOnService?.truckType?.[name]?.quantity - 1)} size="small" type="primary">-</Button>
                                 <p className="mx-3 my-0" style={{width:"9px"}} >{addOnService?.truckType?.[name]?.quantity ? addOnService?.truckType?.[name]?.quantity : 0}</p>
@@ -1164,10 +1199,10 @@ const PostRFQUI=()=>{
             <Col span={24}>
               <Card title="Payment Terms" classNames={{body:"px-4"}} styles={{title:{color:strings.textPrimary1},header:{borderBottom:0}}}>
                 <Form.Item  name={"paymentTerms"}>
-                  <Select placeholder="Select payment terms" options={paymentTermOptions.map(i=>({key:i.title,label:`${i.title} - ${i.days}`,value:i.title}))} />
+                  <Select placeholder="Select payment terms" options={paymentTermOptions.map(i=>({key:i.title,label:`${i.title} - ${i.days}`,value:`${i.title} - ${i.days}`}))} />
                 </Form.Item>
                 {
-                  paymentTerms===strings.others&&
+                  (paymentTerms?paymentTerms:"").includes(strings.others)&&
                   <Form.Item name={"otherPaymentTerms"} rules={[{required:true}]} label="Other Payment Terms" layout="vertical">
                     <Input placeholder="Payment Terms" />
                   </Form.Item>
@@ -1207,7 +1242,7 @@ const PostRFQUI=()=>{
                               <Form.Item label="Email ID" rules={[{required:true},{type:"email",message: 'Please enter correct email'}]} name={[field.name,"email"]} layout="vertical">
                                 <Input />
                               </Form.Item>
-                              <Form.Item label=" " layout="vertical">
+                              <Form.Item layout="vertical">
                                 <Button shape="circle" size="small" onClick={()=>remove(iIndex)} danger className='fw-bold' >-</Button>
                               </Form.Item>
                             </div>
@@ -1215,7 +1250,7 @@ const PostRFQUI=()=>{
                             
                         }
                         <br />
-                      <Button onClick={add}  className="my-4 rounded-pill">
+                      <Button onClick={()=>add({name:""})}  className="my-4 rounded-pill">
                       <PlusCircleFilled className="text-primary1 fs-5" /> Add POC
                       </Button>
                       </>
@@ -1246,19 +1281,19 @@ const PostRFQUI=()=>{
             
           </Row>  
         </Form>
-        <Modal open={SuccessModal}  footer={null} closable={false}>
+        {/* <Modal open={SuccessModal}  footer={null} closable={false}>
             <PostSuccessModal id={Id} />
-        </Modal>
+        </Modal> */}
       </>
     )
 }
 
-const layParams ={
+export const layParams ={
   xs:24, sm:24, md:12, lg:11
 }
-const layParams2 ={
+export const layParams2 ={
   xs:24, sm:24, md:8, lg:8
 }
-const layParams3 ={
+export const layParams3 ={
   xs:24, sm:24, md:12, lg:8,xl:6
 }

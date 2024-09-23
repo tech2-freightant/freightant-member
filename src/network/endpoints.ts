@@ -159,6 +159,15 @@ export async function locode(name:string){
       return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
     }
 }
+export async function 
+locodeById(name:string){
+    try {
+      const response = await axios(`/api/location/locode?id=`+name)
+      return { data: response.data.data[0], code: true, message: "" };
+    } catch (error: any) {
+      return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
+    }
+}
 
 export async function postRfQ(body:any){
   try {
@@ -166,7 +175,47 @@ export async function postRfQ(body:any){
     const response = await instance.post(`/rfq/post`,{...body},{headers:{Authorization: "Bearer " + user?.user?.email}})
     return { data: response.data.data, code: true, message: "" };
   } catch (error: any) {
+    console.log(error.message);
+    
     return { message: error.response?.data?.message || error?.message, code: false, data: null };
   }
 }
+export async function getRfQ(body:any){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance.post(`/rfq/search`,{...body},{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+export async function getRfQById(id:string){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance.post(`/rfq/searchbyid`,{id:id},{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+export async function getExchangeRates(id:string){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance(`/exchangerate`)
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+
+export async function verifytoken(){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance(`/user/verifytoken`,{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+
 
