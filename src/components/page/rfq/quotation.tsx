@@ -10,7 +10,7 @@ import { getRfQById } from '@/network/endpoints';
 import { strings } from '@/components/strings';
 import { PortUI } from './search';
 import CustomTable, { DragHandle } from '@/components/supportcomponents/rfq/editableTable';
-import { freightTitle, paymentTermOptions, polChargeOptions, polOptions, shippingLinesOptiopns, uomSeaFcl } from './options';
+import { freightCostHead, freightTitle, paymentTermOptions, polChargeOptions, polOptions, shippingLinesOptiopns, unitsOption, uomSeaFcl } from './options';
 import LocodeSelect from '@/components/supportcomponents/customcomponents/locodeselect';
 import { locodeFormatedString } from '@/components/utils';
 
@@ -26,15 +26,22 @@ const OceanFreightForm=({id}:{id?:string | string[] | undefined})=>{
               setCurrentStep(e)
           }
       }
+      
 
-
-  if(isLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center p-5">
-        <Spin />
-      </div>
-    )
-  }
+      if (isLoading) {
+        return (
+          <div className="d-flex justify-content-center align-items-center p-5">
+            <Spin />
+          </div>
+        )
+      }
+      if (!data?.code) {
+        return (
+          <div className="d-flex justify-content-center align-items-center p-5">
+            <Result status={"error"} subTitle={data?.message} />
+          </div>
+        )
+      }
         return (
           <ContextRFQQuata.Provider value={{ state, dispatch }}>
             <RFQUserUI sideUI={<RFQQuataSideUI step={currentStep} updateSteps={updateCount} />}>
@@ -87,8 +94,10 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const [polActive, setpolActive] = useState<number>(-1)
   const [podActive, setpodActive] = useState<number>(-1)
 
-  const updateQuantity =(value:any,iIndex:number,i=0)=>{    
-    let items = (rfq?.container?rfq?.container:[]).filter((i:any)=>i.name==value)
+  const updateQuantity =(value:any,iIndex:number,i=0)=>{
+    console.log(value,iIndex);
+    
+    let items = (rfq?.container?rfq?.container:[]).filter((o:any)=>o.name==value)
     if(items.length>0){
       form.setFieldValue(["freightCharge",iIndex,"unit"],items[0].quantity)
       handleInputChange(iIndex,"unit",value,i)
@@ -117,6 +126,8 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
       })
       return
     }
+    console.log(id,name,value);
+    
     setFreightData((i:any)=>{
       i[id][name]=value
       if("rate" === name){
@@ -126,8 +137,28 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
     })
   }
  
+  useEffect(() => {
+    console.log(freightData);
+    
+    let inclusiveFright = 0;
+    freightData.forEach((i:any)=>{inclusiveFright += i["amount"]})
+    form.setFieldValue("inclusiveFright",inclusiveFright)
+
+    let totalpol = 0;
+    polChargesData.forEach((i:any)=>{totalpol += i["amount"]})
+    form.setFieldValue("polCharge",totalpol)
+    
+    let totalpod = 0;
+    podChargesData.forEach((i:any)=>{totalpod += i["amount"]})
+    form.setFieldValue("podCharge",totalpod)
+
+    let totalLanded = inclusiveFright+totalpol+totalpod
+    form.setFieldValue("totallandedCost",totalLanded)
+    console.log(totalLanded);
+    
+  }, [freightData,polChargesData,podChargesData])
+  
   // SS
-  const [shippingLine, setShippingLine] = useState('CMA CGM');
   const [transshipmentPorts, setTransshipmentPorts] = useState([]);
   const [etd, setEtd] = useState(new Date());
   const [siCutOffDate, setSiCutOffDate] = useState(new Date());
@@ -138,14 +169,11 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const noOfTransShipmentPorts = Form.useWatch("noOfTransShipmentPorts",form)
   const paymentTermsStatus = Form.useWatch("paymentTermsStatus",form)
   const paymentTermsDeclineValue = Form.useWatch("paymentTermsDeclineValue",form)
+  const shippingLine = Form.useWatch("shippingLine",form)
   const polFreeTimeStatus = Form.useWatch("polFreeTimeStatus",form)
   const podFreeTimeStatus = Form.useWatch("podFreeTimeStatus",form)
   const polFreeTimeDeclineValue = Form.useWatch("polFreeTimeDeclineValue",form)
   const podFreeTimeDeclineValue = Form.useWatch("podFreeTimeDeclineValue",form)
-
-  const handleShippingLineChange = (value:any) => {
-    setShippingLine(value);
-  };
 
   const handleTransshipmentPortChange = (value:any, index:any) => {
     const updatedPorts:any = [...transshipmentPorts];
@@ -266,44 +294,43 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   className:"text-wrap",
                                   render:(_:any,record:any,index:number)=>(
                                       <Select 
+                                      style={{maxWidth:"250px"}}
                                       onFocus={()=>setfreightActive(record.key)}                                      
                                       onBlur={()=>setfreightActive(-1)}
                                       mode={freightActive===record.key?"tags":undefined}
-                                      onChange={(value, options) => {
-                                        
+                                      onChange={(value, options) => {                                        
                                         handleInputChange(index,"costHead",value[value.length-1])
                                       }}
-                                          value={freightData[index]?.costHead}
-                                      className='w-100 text-wrap' variant="borderless" options={[
-                                        {label: strings.oceanfreight,value:strings.oceanfreight}
-                                      ]} placeholder="" />
+                                      value={freightData[index]?.costHead}
+                                      className='w-100 text-wrap' variant="borderless" 
+                                      options={freightCostHead(rfq?.modeOfShipment)}
+                                      maxCount={1}
+                                      dropdownStyle={{width:"320px",fontSize:9}}
+                                      placeholder="" />
                                   )
                                 },
                                 {
                                   title: "Units",
-                                  dataIndex: "units",
                                   key: "units",
                                   children: [
                                     {
                                       title: "",
-                                      dataIndex: "costHeads",
+                                      dataIndex: "unit",
                                       key: "ch1",
                                       width:100,
                                       render:(_:any,record:any,index:number)=>(
                                           <Select className='w-100 text-wrap' value={freightData[index].unit} variant="borderless" options={
-                                            (rfq?.container?rfq?.container:[]).map((i:any)=>(
-                                              {key:i.name,value:i.name,label:i.name}
-                                            ))
+                                            unitsOption(rfq?.modeOfShipment)
                                           } placeholder="" onChange={e=>updateQuantity(e,index)}/>
                                         )
                                     },
                                     {
                                       title: "",
-                                      dataIndex: "costHeads",
+                                      dataIndex: "quantity",
                                       key: "ch2",
-                                      width:30,
+                                      width:40,
                                       render:(_:any,record:any,index:number)=>(
-                                          <Input className='p-0 m-0' variant="borderless" value={freightData[index].quantity} onChange={(e:any)=>handleInputChange(
+                                          <Input className='p-0 m-0 text-center' variant="borderless" value={freightData[index].quantity} onChange={(e:any)=>handleInputChange(
                                             index,
                                             "quantity",
                                             e.target.value
@@ -322,7 +349,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   dataIndex: "rate",
                                   key: "rate",
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input variant="borderless" value={freightData[index].rate} onChange={e=>handleInputChange(record?.key,"rate",e.target.value)}/>
+                                    <Input variant="outlined" className="p-1" value={freightData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value)}/>
                                   ))
                                 },
                                 {
@@ -338,12 +365,12 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                             </CustomTable>
                             <Button className='my-2' shape="round" icon={<PlusCircleFilled className="text-primary1 fs-5" />} onClick={() => handleAddRow('oceanFreight')}>Add New Row</Button>
                             <Col sm={22} md={12}>
-                              <Form.Item name={"inclusiveFright"} label={"Total Landed Cost"}>
+                              <Form.Item name={"inclusiveFright"} label={"Total Landed Cost"} layout="horizontal">
                                 <Input />
                               </Form.Item>
                             </Col>
                         </Card>
-
+                        { (rfq?.incoterm !== strings.FOB)&&
                         <Card title="Port of Loading [POL] Charges" styles={{ header: { borderBottom: 0 } }}>
                             <CustomTable dataSource={polChargesData}
                               columns={[
@@ -360,7 +387,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   width:150,
                                   className:"text-wrap",
                                   render:(_:any,record:any,index:number)=>(
-                                      <Select className='w-100' value={polChargesData[index]?.costCategory} variant="borderless" options={polOptions(rfq?.modeOfShipment)} placeholder="" onChange={e=>handleInputChange(index,"costCategory",e,1)}/>                                  )
+                                      <Select className='w-100' value={polChargesData[index]?.costCategory} variant="borderless" options={polOptions(rfq?.modeOfShipment)} placeholder="" onChange={e=>handleInputChange(index,"costCategory",e,1)}/>)
                                 },
                                 {
                                   title: "Cost heads",
@@ -414,9 +441,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                       width:100,
                                       render:(_:any,record:any,index:number)=>(
                                           <Select className='w-100 text-wrap' value={polChargesData[index]?.unit} variant="borderless" options={
-                                            (rfq?.container?rfq?.container:[]).map((i:any)=>(
-                                              {key:i.name,value:i.name,label:i.name}
-                                            ))
+                                            unitsOption(rfq?.modeOfShipment)
                                           } placeholder=""
                                           dropdownStyle={{width:"240px"}}
                                           onChange={e=>updateQuantity(e,index,1)}/>
@@ -448,7 +473,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   dataIndex: "rate",
                                   key: "rate",
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input variant="borderless" value={polChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,1)}/>
+                                    <Input variant="outlined" className="p-1" value={polChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,1)}/>
                                   ))
                                 },
                                 {
@@ -466,29 +491,144 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                               <Form.Item name={"polRemarks"}>
                                 <Input placeholder='Enter Remarks & T&C (If any)' />
                               </Form.Item>
-                              <Form.Item name={"polCharge"} label={"Port of Loading [POL] charges:"}>
+                              <Form.Item name={"polCharge"} label={"Port of Loading [POL] charges:"} layout="horizontal">
                                 <Input />
                               </Form.Item>
                             </div>
                         </Card>
-
+                        }
+                        {!((rfq?.incoterm?rfq?.incoterm:"").toLowerCase().includes("c"))&&
                         <Card title="Port of Discharge [POD] Charges" styles={{ header: { borderBottom: 0 } }}>
+                            <CustomTable dataSource={podChargesData}
+                              columns={[
+                                {
+                                  key: 'sort',
+                                  align: 'center',
+                                  width: 30,
+                                  render: () => <DragHandle />,
+                                },
+                                {
+                                  title: "Cost Category",
+                                  dataIndex: "costCategory",
+                                  key: "costCategory",
+                                  width:150,
+                                  className:"text-wrap",
+                                  render:(_:any,record:any,index:number)=>(
+                                      <Select className='w-100' value={podChargesData[index]?.costCategory} variant="borderless" options={polOptions(rfq?.modeOfShipment)} placeholder="" onChange={e=>handleInputChange(index,"costCategory",e,2)}/>)
+                                },
+                                {
+                                  title: "Cost heads",
+                                  dataIndex: "costHead",
+                                  key: "costHead",
+                                  width:"230px",
+                                  className:"text-wrap",
+                                  render:(_:any,record:any,index:number)=>(
+                                      <Select
+                                      onFocus={()=>setpolActive(record.key)}                                      
+                                      onBlur={()=>setpolActive(-1)}
+                                      mode={polActive===record.key?"tags":undefined}
+                                      maxCount={1}
+                                      style={{maxWidth:"205px"}}
+                                      className='w-100' variant="borderless" options={polChargeOptions(podChargesData[index]?.costCategory)} placeholder=""
+                                      value={podChargesData[index]?.costHead}
+                                      onChange={(value, options) => {                                                 
+                                        handleInputChange(index,"costHead",value,2)
+                                      }}
+                                      dropdownStyle={{width:"300px",fontSize:9}}
+                                      maxTagTextLength={12}
+                                      />
+                                  )
+                                },
+                                {
+                                  title: "Receipted",
+                                  dataIndex: "receipted",
+                                  key: "costHead",
+                                  width:50,
+                                  className:"text-wrap",
+                                  render:(_:any,record:any,index:number)=>(
+                                    <div className="w-100 d-flex justify-content-center">
+                                      <Checkbox                                      
+                                      className=''
+                                      value={podChargesData[index]?.receipted}
+                                      onChange={(value) => {      
+                                        handleInputChange(index,"receipted",value,2)
+                                      }}/>
+                                    </div>
+                                  )
+                                },
+                                {
+                                  title: "Units",
+                                  dataIndex: "units",
+                                  key: "units",
+                                  children: [
+                                    {
+                                      title: "",
+                                      dataIndex: "costHeads",
+                                      key: "ch1",
+                                      width:100,
+                                      render:(_:any,record:any,index:number)=>(
+                                          <Select className='w-100 text-wrap' value={podChargesData[index]?.unit} variant="borderless" options={
+                                            unitsOption(rfq?.modeOfShipment)
+                                          } placeholder=""
+                                          dropdownStyle={{width:"240px"}}
+                                          onChange={e=>updateQuantity(e,index,2)}/>
+                                        )
+                                    },
+                                    {
+                                      title: "",
+                                      dataIndex: "costHeads",
+                                      key: "ch2",
+                                      width:40,
+                                      render:(_:any,record:any,index:number)=>(
+                                          <Input className='p-0 m-0' variant="borderless" value={podChargesData[index]?.quantity} onChange={(e:any)=>handleInputChange(
+                                            index,
+                                            "quantity",
+                                            e.target.value,
+                                            2
+                                          )} />
+                                        )
+                                    },
+                                  ],
+                                },
+                                {
+                                  title: "Currency",
+                                  dataIndex: "currency",
+                                  key: "currency",
+                                },
+                                {
+                                  title: "Rate",
+                                  dataIndex: "rate",
+                                  key: "rate",
+                                  render:((_:any,record:any,index:number)=>(
+                                    <Input variant="outlined" className="p-1" value={podChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,2)}/>
+                                  ))
+                                },
+                                {
+                                  title: "Amount",
+                                  dataIndex: "amount",
+                                  key: "amount",   
+                              
+                                },
+                              ]}
+                              setDataSource={setPodChargesData}
+                            />
                             
-                               
                             <Button className='my-2' shape="round" icon={<PlusCircleFilled className="text-primary1 fs-5" />}  onClick={() => handleAddRow('podCharges')}>Add New Row</Button>
                             <div className="col-12 col-md-8 col-lg-6">
                               <Form.Item name={"podRemarks"}>
                                 <Input placeholder='Enter Remarks & T&C (If any)' />
                               </Form.Item>
-                              <Form.Item name={"podCharge"} label={"Port of Discharge [POD] charges:"}>
+                              <Form.Item name={"podCharge"} label={"Port of Discharge [POD] charges:"} layout="horizontal">
                                 <Input />
                               </Form.Item>
                             </div>
                         </Card>
-
-                        <Form.Item name={"totallandedCost"} label={"Total Landed Cost"} className='d-inline'>
-                            <Input disabled value={calculateTotalLandedCost()} addonBefore={"INR"} className='d-inline' />
-                        </Form.Item>
+                        }
+                        <div className="col-12 col-md-8 col-lg-6">
+                          <Form.Item name={"totallandedCost"} label={"Total Landed Cost"} className='d-inline' layout="horizontal">
+                              <Input disabled value={calculateTotalLandedCost()} addonBefore={"INR"} className='d-inline' />
+                          </Form.Item>
+                        </div>
                     </div>
                 </Card>
             </Col>
@@ -498,7 +638,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                     <Row gutter={[16,16]}>
                         <Col sm={24} md={12}>
                             <Form.Item name={"shippingLine"} label={`Shipping Line`} layout="horizontal">
-                                <Select mode="tags" maxCount={1} value={shippingLine} options={shippingLinesOptiopns} onChange={handleShippingLineChange}/>
+                                <Select mode={"tags"} maxCount={1} value={shippingLine} options={shippingLinesOptiopns}/>
                             </Form.Item>
                         </Col>
                         <Col sm={24} md={12}>

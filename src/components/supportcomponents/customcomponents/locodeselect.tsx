@@ -70,7 +70,6 @@ async function fetchUserList(username: string): Promise<any> {
 
 const LocodeSelect = ({change,changeLocation,wholeValue,...props}:{wholeValue?:any,props?:any,mode?:any,change:any,changeLocation?:any}) => {
   const [value, setValue] = useState<UserValue[]>([]);
-  console.log(props);
   
   return (
     <DebounceSelect

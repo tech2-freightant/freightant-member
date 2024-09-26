@@ -32,8 +32,10 @@ const strings ={
     customsClearnace: "Customs Clearnace",
     cfsHandling: "CFS Handling",
     doorToPortTrucking: "Door To Port Trucking",
-    factoryStuffing: "Factory Stuffing",
-    portCFSStuffing:"Port / CFS Stuffing",
+    factoryStuffing: "Factory / Door Stuffing",
+    portCFSStuffing:"Port / Trminal /Ramp Stuffing",
+    defactoryStuffing: "Factory / Door Destuffing",
+    deportCFSStuffing:"Port / Trminal /Ramp Destuffing",
     reeferContainers: "REEFER Containers",
     specialContainers: "Special Containers",
     standardContainers: "Standard Containers",
@@ -69,6 +71,11 @@ const strings ={
     govtPass:"Govt Pass",
     accepted:"Accepted",
     decline:"Decline",
+    mt:"MT",
+    cbm:"CBM",
+    awb:"AWB",
+    invoice:"Invoice",
+    truck:"Truck",
 
 
 

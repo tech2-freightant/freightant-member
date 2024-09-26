@@ -19,7 +19,7 @@ export const reeferCargoOptions = [strings.frozen,strings.chilled,strings.pharma
 export const crossBorderTruckCargoOptions = [strings.general,strings.hazardous,strings.odc]
 export const gaugestatusOptions = [strings.ingauge,strings.outgauge]
 export const stuffingLocationTypeOptions = [strings.factoryStuffing,strings.portCFSStuffing]
-export const destuffingLocationTypeOptions = ["Factory Destuffing","Port / CFS Destuffing"]
+export const destuffingLocationTypeOptions = [strings.factoryStuffing,strings.portCFSStuffing]
 export const openBodytrucksOptions = [
   "PICKUP:1 TON",
   "TATA ACE: 800 KGS",
@@ -370,10 +370,30 @@ export const paymentTermOptions = [
 export const importIncotermOptions = ["EXW","FOB","FCA","FAS"]
 
 export const uomSeaFcl = [
+  { key: 'BL', label: 'BL', value: "BL" },
   { key: '20FT', label: '20 Feet', value: strings["20ft"] },
   { key: '40FT', label: '40 Feet', value: strings["40ft"] },
-  { key: 'BL', label: 'BL', value: strings.bl }
 ]
+
+export const unitsOption =(modeOfShipment:string)=>{
+  switch (modeOfShipment) {
+    case strings.seaFCL:
+        return uomSeaFcl
+      break;
+    case strings.seaLCL:
+        return uomSeaFcl
+      break;
+    default:
+        return [
+          {label:strings.mt,value:strings.mt},
+          {label:strings.cbm,value:strings.cbm},
+          {label:strings.awb,value:strings.awb},
+          {label:strings.invoice,value:strings.invoice},
+          {label:strings.truck,value:strings.truck},
+        ]
+      break;
+  }
+}
 
 export const polOptions = (mode:string)=>{
   switch (mode) {
@@ -415,73 +435,151 @@ export const polOptions = (mode:string)=>{
   }
 }
 
-export const freightCharge = (mode:string)=>{
+export const freightCostHead = (mode:string)=>{
   switch (mode) {
     case strings.seaLCL:
       return [
         {label:"BOF - Basic Ocean Freight", value:"BOF - Basic Ocean Freight"},
-        {label:"AOF - All inclusive Ocean Freight", value:"BOF - Basic Ocean Freight"},
-        {label:"OWS - Overweight Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"MFR - Marine Fuel Recovery", value:"BOF - Basic Ocean Freight"},
-        {label:"LSS - Low Sulphur Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"WRS - War Risk Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"ERS - Emergency Risk Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"EBS - Emergency Bunker Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"GRI - General Rate Increase", value:"BOF - Basic Ocean Freight"},
-        {label:"ISPS - International Ship And Port Facility Security", value:"BOF - Basic Ocean Freight"},
-        {label:"PSS - Peak Season Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"BAF - Bunker Adjustment Factor ", value:"BOF - Basic Ocean Freight"},
-        {label:"CAF - Currency Adjustment Factor ", value:"BOF - Basic Ocean Freight"},
-        {label:"PRS - Piracy Risk Surcharge ", value:"BOF - Basic Ocean Freight"},
-        {label:"EU - Emissions Trading System", value:"BOF - Basic Ocean Freight"},
-        {label:"EIS - Equipment Imbalance Surcharge ", value:"BOF - Basic Ocean Freight"},
-        {label:"PCC - Panama Canal Surcharge ", value:"BOF - Basic Ocean Freight"},
-        {label:"WSC - Winter Surcharge  ", value:"BOF - Basic Ocean Freight"},
-        {label:"HAZ - Hazardous Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"DGS - Dangerous goods surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"SCS - Suez Canal Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"SES - Special Equipment Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"AGS - Aden Gulf Surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"CAF - Currency Adjustment Factor ", value:"BOF - Basic Ocean Freight"},
-        {label:"HEA - Heavy lift surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"REF - Reefer surcharge", value:"BOF - Basic Ocean Freight"},
-        {label:"ENS - Entry Summary Declaration", value:"BOF - Basic Ocean Freight",}
+        {label:"AOF - All inclusive Ocean Freight", value:"AOF - All inclusive Ocean Freight"},
+        {label:"OWS - Overweight Surcharge", value:"OWS - Overweight Surcharge"},
+        {label:"MFR - Marine Fuel Recovery", value:"MFR - Marine Fuel Recovery"},
+        {label:"LSS - Low Sulphur Surcharge", value:"LSS - Low Sulphur Surcharge"},
+        {label:"WRS - War Risk Surcharge", value:"WRS - War Risk Surcharge"},
+        {label:"ERS - Emergency Risk Surcharge", value:"ERS - Emergency Risk Surcharge"},
+        {label:"EBS - Emergency Bunker Surcharge", value:"EBS - Emergency Bunker Surcharge"},
+        {label:"GRI - General Rate Increase", value:"GRI - General Rate Increase"},
+        {label:"ISPS - International Ship And Port Facility Security", value:"ISPS - International Ship And Port Facility Security"},
+        {label:"PSS - Peak Season Surcharge", value:"PSS - Peak Season Surcharge"},
+        {label:"BAF - Bunker Adjustment Factor ", value:"BAF - Bunker Adjustment Factor "},
+        {label:"CAF - Currency Adjustment Factor ", value:"CAF - Currency Adjustment Factor "},
+        {label:"PRS - Piracy Risk Surcharge ", value:"PRS - Piracy Risk Surcharge "},
+        {label:"EU - Emissions Trading System", value:"EU - Emissions Trading System"},
+        {label:"EIS - Equipment Imbalance Surcharge ", value:"EIS - Equipment Imbalance Surcharge "},
+        {label:"PCC - Panama Canal Surcharge ", value:"PCC - Panama Canal Surcharge "},
+        {label:"WSC - Winter Surcharge  ", value:"WSC - Winter Surcharge  "},
+        {label:"HAZ - Hazardous Surcharge", value:"HAZ - Hazardous Surcharge"},
+        {label:"DGS - Dangerous goods surcharge", value:"DGS - Dangerous goods surcharge"},
+        {label:"SCS - Suez Canal Surcharge", value:"SCS - Suez Canal Surcharge"},
+        {label:"SES - Special Equipment Surcharge", value:"SES - Special Equipment Surcharge"},
+        {label:"AGS - Aden Gulf Surcharge", value:"AGS - Aden Gulf Surcharge"},
+        {label:"CAF - Currency Adjustment Factor ", value:"CAF - Currency Adjustment Factor "},
+        {label:"HEA - Heavy lift surcharge", value:"HEA - Heavy lift surcharge"},
+        {label:"REF - Reefer surcharge", value:"REF - Reefer surcharge"},
+        {label:"ENS - Entry Summary Declaration", value:"ENS - Entry Summary Declaration",}
         ]
-      break;
-    case strings.seaFCL:
-        return [
-          {label:"BOF - Basic Ocean Freight", value:"BOF - Basic Ocean Freight"},
-          {label:"AOF - All inclusive Ocean Freight", value:"BOF - Basic Ocean Freight"},
-          {label:"OWS - Overweight Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"MFR - Marine Fuel Recovery", value:"BOF - Basic Ocean Freight"},
-          {label:"LSS - Low Sulphur Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"WRS - War Risk Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"ERS - Emergency Risk Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"EBS - Emergency Bunker Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"GRI - General Rate Increase", value:"BOF - Basic Ocean Freight"},
-          {label:"ISPS - International Ship And Port Facility Security", value:"BOF - Basic Ocean Freight"},
-          {label:"PSS - Peak Season Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"BAF - Bunker Adjustment Factor ", value:"BOF - Basic Ocean Freight"},
-          {label:"CAF - Currency Adjustment Factor ", value:"BOF - Basic Ocean Freight"},
-          {label:"PRS - Piracy Risk Surcharge ", value:"BOF - Basic Ocean Freight"},
-          {label:"EU - Emissions Trading System", value:"BOF - Basic Ocean Freight"},
-          {label:"EIS - Equipment Imbalance Surcharge ", value:"BOF - Basic Ocean Freight"},
-          {label:"PCC - Panama Canal Surcharge ", value:"BOF - Basic Ocean Freight"},
-          {label:"WSC - Winter Surcharge  ", value:"BOF - Basic Ocean Freight"},
-          {label:"HAZ - Hazardous Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"DGS - Dangerous goods surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"SCS - Suez Canal Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"SES - Special Equipment Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"AGS - Aden Gulf Surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"CAF - Currency Adjustment Factor ", value:"BOF - Basic Ocean Freight"},
-          {label:"HEA - Heavy lift surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"REF - Reefer surcharge", value:"BOF - Basic Ocean Freight"},
-          {label:"ENS - Entry Summary Declaration", value:"BOF - Basic Ocean Freight",}
-          ]
+        break;
+        case strings.seaFCL:
+          return [
+            {label:"BOF - Basic Ocean Freight", value:"BOF - Basic Ocean Freight"},
+            {label:"AOF - All inclusive Ocean Freight", value:"AOF - All inclusive Ocean Freight"},
+            {label:"OWS - Overweight Surcharge", value:"OWS - Overweight Surcharge"},
+            {label:"MFR - Marine Fuel Recovery", value:"MFR - Marine Fuel Recovery"},
+            {label:"LSS - Low Sulphur Surcharge", value:"LSS - Low Sulphur Surcharge"},
+            {label:"WRS - War Risk Surcharge", value:"WRS - War Risk Surcharge"},
+            {label:"ERS - Emergency Risk Surcharge", value:"ERS - Emergency Risk Surcharge"},
+            {label:"EBS - Emergency Bunker Surcharge", value:"EBS - Emergency Bunker Surcharge"},
+            {label:"GRI - General Rate Increase", value:"GRI - General Rate Increase"},
+            {label:"ISPS - International Ship And Port Facility Security", value:"ISPS - International Ship And Port Facility Security"},
+            {label:"PSS - Peak Season Surcharge", value:"PSS - Peak Season Surcharge"},
+            {label:"BAF - Bunker Adjustment Factor ", value:"BAF - Bunker Adjustment Factor "},
+            {label:"CAF - Currency Adjustment Factor ", value:"CAF - Currency Adjustment Factor "},
+            {label:"PRS - Piracy Risk Surcharge ", value:"PRS - Piracy Risk Surcharge "},
+            {label:"EU - Emissions Trading System", value:"EU - Emissions Trading System"},
+            {label:"EIS - Equipment Imbalance Surcharge ", value:"EIS - Equipment Imbalance Surcharge "},
+            {label:"PCC - Panama Canal Surcharge ", value:"PCC - Panama Canal Surcharge "},
+            {label:"WSC - Winter Surcharge  ", value:"WSC - Winter Surcharge  "},
+            {label:"HAZ - Hazardous Surcharge", value:"HAZ - Hazardous Surcharge"},
+            {label:"DGS - Dangerous goods surcharge", value:"DGS - Dangerous goods surcharge"},
+            {label:"SCS - Suez Canal Surcharge", value:"SCS - Suez Canal Surcharge"},
+            {label:"SES - Special Equipment Surcharge", value:"SES - Special Equipment Surcharge"},
+            {label:"AGS - Aden Gulf Surcharge", value:"AGS - Aden Gulf Surcharge"},
+            {label:"CAF - Currency Adjustment Factor ", value:"CAF - Currency Adjustment Factor "},
+            {label:"HEA - Heavy lift surcharge", value:"HEA - Heavy lift surcharge"},
+            {label:"REF - Reefer surcharge", value:"REF - Reefer surcharge"},
+            {label:"ENS - Entry Summary Declaration", value:"ENS - Entry Summary Declaration",}
+            ]
         break;
       case strings.air:
-        return
+       return [
+        { "value": "1st0.5", "label": "First 0.5Kg Surcharge" },
+        { "value": "AAA ", "label": "Misc Charge " },
+        { "value": "AAC ", "label": "AAC" },
+        { "value": "ADC ", "label": "ADC" },
+        { "value": "ADF ", "label": "Airline Documentation Fees" },
+        { "value": "ADO ", "label": "Airline Delivery Order Chargs" },
+        { "value": "AF ", "label": "Agency Fees" },
+        { "value": "AIL ", "label": "Airport Insurance levy" },
+        { "value": "ALCOM ", "label": "Commission" },
+        { "value": "ARDG ", "label": "Airline DG charges." },
+        { "value": "BAG ", "label": "CFL (LHR)" },
+        { "value": "BBF ", "label": "Break Bulk Fee" },
+        { "value": "BHC ", "label": "Battery Handling Charges" },
+        { "value": "BSC ", "label": "BL Surrender Charges" },
+        { "value": "CC ", "label": "Courier Charge" },
+        { "value": "CDD ", "label": "Cargo Data Declaration" },
+        { "value": "CGC ", "label": "Customs Surcharge" },
+        { "value": "CI ", "label": "Custom Inspection" },
+        { "value": "CLRBAG", "label": "Clearance Bag Charges per MHAWB" },
+        { "value": "CO ", "label": "Customs Overtime" },
+        { "value": "COLOAD", "label": "COLOAD" },
+        { "value": "CSC ", "label": "Currency Surcharge" },
+        { "value": "CTG ", "label": "Cartage" },
+        { "value": "DC ", "label": "Deferment Charge" },
+        { "value": "DCR ", "label": "Due Carrier" },
+        { "value": "DDPS ", "label": "Duty Delivery paid surcharge" },
+        { "value": "DEL ", "label": "Delivery Charge" },
+        { "value": "DHand ", "label": "Destination handling charge" },
+        { "value": "DO ", "label": "Delivery Order Charges" },
+        { "value": "DS ", "label": "Demand Surcharge" },
+        { "value": "DUTY ", "label": "DUTY & TAX" },
+        { "value": "ECC ", "label": "Express Courier Charges" },
+        { "value": "EDI ", "label": "EDI" },
+        { "value": "EDT ", "label": "Electronic Data Transfer Fee" },
+        { "value": "EHS ", "label": "EHS" },
+        { "value": "ESS ", "label": "Emergency Situation Surcharge" },
+        { "value": "EUST ", "label": "EUST" },
+        { "value": "FC ", "label": "Freight Collect charges" },
+        { "value": "FCD ", "label": "Formal Customs Declaration" },
+        { "value": "FSCW ", "label": "Fuel Surcharge Waived" },
+        { "value": "Gate ", "label": "Gate Charge" },
+        { "value": "HACIS ", "label": "HACIS" },
+        { "value": "HAWBFE", "label": "HAWB FEE" },
+        { "value": "HNDCRY", "label": "Hand Carry" },
+        { "value": "IEF ", "label": "進口報關手續費" },
+        { "value": "IMPVAT", "label": "Import VAT" },
+        { "value": "IRC ", "label": "Insurance Risk Charge" },
+        { "value": "LABEL ", "label": "Label Charges" },
+        { "value": "LEF ", "label": "Linex Execution Fee" },
+        { "value": "LSF ", "label": "Linex Service Fee" },
+        { "value": "MISC ", "label": "Misc. Charges" },
+        { "value": "OOA ", "label": "Out of Area" },
+        { "value": "OOH ", "label": "Out of Hours" },
+        { "value": "pack ", "label": "Packing" },
+        { "value": "PFLC ", "label": "Parafiscal Charge" },
+        { "value": "PRC ", "label": "Packing/ Repacking Charges" },
+        { "value": "PRF ", "label": "Paperless Register Fee" },
+        { "value": "RCR ", "label": "RCAR Charges" },
+        { "value": "RDF ", "label": "報單費" },
+        { "value": "REMOTE", "label": "REMOTE AREA" },
+        { "value": "RHC ", "label": "假日收費" },
+        { "value": "RPX ", "label": "RPX" },
+        { "value": "SCD ", "label": "Simplified Customs Declaration" },
+        { "value": "SFC ", "label": "Stuffing Charges" },
+        { "value": "SPC ", "label": "Special Pick Up Charge" },
+        { "value": "SSCL ", "label": "Social Security Contribution Levy" },
+        { "value": "SZX ", "label": "SZX Pick up charges" },
+        { "value": "SZX-GP", "label": "SZX Pick up charges - Guangdong Province" },
+        { "value": "TOLL ", "label": "Toll Charges" },
+        { "value": "TS ", "label": "Transhipment" },
+        { "value": "UPICK ", "label": "Urgent Pick up" },
+        { "value": "VAT-99", "label": "Reserved Code Do not use" },
+        { "value": "VOR ", "label": "Vorlageprovision 3%" },
+        { "value": "WRS ", "label": "War Risk Surcharge" },
+        { "value": "XRAY ", "label": "X-RAY CHARGES" }
+      ]
+        break
     default:
+      return[]
       break;
   }
 }
@@ -649,6 +747,7 @@ export const polChargeOptions = (category:string)=>{
         {label:`CFS Lift On/Off Charges`,value:`CFS Lift On/Off Charges`},
       ]
     default:
+      return [];
       break;
   }
 }

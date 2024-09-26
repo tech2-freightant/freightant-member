@@ -941,7 +941,9 @@ const PostRFQUI=()=>{
                             <Checkbox checked={addOnService?.eSeal === false} onChange={() => form.setFieldValue(["addOnService", "eSeal"], false)}>No</Checkbox>
                           </Form.Item>
                           <Form.Item name={["addOnService", "stuffingLocationType"]} label="Stuffing Location Type" initialValue={false} style={{ width: "100%" }} layout="horizontal">
-                            {stuffingLocationTypeOptions.map((e: string,iIndex) => (<Button key={iIndex+"cBSt"} block shape="round" style={{ maxWidth: "11em", margin: 2, lineHeight: 1, fontSize: "12px" }} type={addOnService?.stuffingLocationType === e ? "primary" : "default"} onClick={() => { form.setFieldValue(["addOnService", "stuffingLocationType"], e) }}>{e}</Button>))}
+                            <Space>
+                              {stuffingLocationTypeOptions.map((e: string,iIndex) => (<Button key={iIndex+"cBSt"} block shape="round" style={{  margin: 2, lineHeight: 1, fontSize: "12px" }} type={addOnService?.stuffingLocationType === e ? "primary" : "default"} onClick={() => { form.setFieldValue(["addOnService", "stuffingLocationType"], e) }}>{e}</Button>))}
+                            </Space>
                           </Form.Item>
                         </>
                       }
@@ -1098,7 +1100,7 @@ const PostRFQUI=()=>{
                       <Checkbox checked={addOnService?.eSeal === false} onChange={() => form.setFieldValue(["addOnService", "eSeal"], false)}>No</Checkbox>
                     </Form.Item>
                     <Form.Item name={["addOnService", "stuffingLocationType"]} label="De Stuffing Location Type" initialValue={false} style={{ width: "100%" }}>
-                      {destuffingLocationTypeOptions.map((e: string,iIndex) => (<Button key={iIndex+"cbt"} block shape="round" style={{ maxWidth: "11em", margin: 2, lineHeight: 1, fontSize: "12px" }} type={addOnService?.stuffingLocationType === e ? "primary" : "default"} onClick={() => { form.setFieldValue(["addOnService", "stuffingLocationType"], e) }}>{e}</Button>))}
+                      {destuffingLocationTypeOptions.map((e: string,iIndex) => (<Button key={iIndex+"cbt"} block shape="round" style={{ margin: 2, lineHeight: 1, fontSize: "12px" }} type={addOnService?.stuffingLocationType === e ? "primary" : "default"} onClick={() => { form.setFieldValue(["addOnService", "stuffingLocationType"], e) }}>{e}</Button>))}
                     </Form.Item>
                   </>
                   }
@@ -1281,9 +1283,9 @@ const PostRFQUI=()=>{
             
           </Row>  
         </Form>
-        {/* <Modal open={SuccessModal}  footer={null} closable={false}>
+        <Modal open={SuccessModal}  footer={null} closable={false}>
             <PostSuccessModal id={Id} />
-        </Modal> */}
+        </Modal>
       </>
     )
 }
