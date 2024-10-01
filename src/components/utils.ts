@@ -1,4 +1,5 @@
 import { Montserrat } from "next/font/google";
+import { strings } from "./strings";
 
 const assetsRootPath = "/"
 const errorMessage = (name:String,custom:number=0)=> custom? name :`${name} Requires`
@@ -55,3 +56,12 @@ export const locodeFormatedString = (locodeObj:any):string=>{
 } 
 
 export {assetsRootPath, errorMessage, validateMessages, inter, updateArray,CBMCalculate}
+
+export const getPaymentCode = (paymentCode:string)=>{
+  let p = (paymentCode?paymentCode:"").split("-")
+  if(p.length>0){
+    return p[0]
+  } else{
+    return strings.others
+  }
+}

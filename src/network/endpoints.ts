@@ -198,7 +198,7 @@ export async function getRfQById(id:string){
     return { message: error.response?.data?.message || error?.message, code: false, data: null };
   }
 }
-export async function getExchangeRates(id:string){
+export async function getExchangeRates(){
   try {
     let user = await getSessionCache()  
     const response = await instance(`/exchangerate`)
@@ -218,4 +218,14 @@ export async function verifytoken(){
   }
 }
 
-
+export async function postQuotation(body:any){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance.post(`/rfq/quotation/post`,{...body},{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    console.log(error.message);
+    
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}

@@ -555,7 +555,7 @@ const lParams={
 const TextUI = ({children}: {children?:string})=> <span className='bg-shade text-primary1 p-1 px-3 rounded-pill'>{children}</span>
 export const PortUI = ({i}:{i:any})=>{
   
-  return <Input disabled className='border rounded-2' value={`${i?.emoji} ${i?.Country}${i?.Location} - ${i?.Name},[${i?.Subdivision}] ${i?.countryname}`}/>
+  return <Input disabled className='border rounded-2 bg-light' value={`${i?.emoji} ${i?.Country}${i?.Location} - ${i?.Name},[${i?.Subdivision}] ${i?.countryname}`}/>
 }
 const columns = [
   {

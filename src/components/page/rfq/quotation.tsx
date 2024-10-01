@@ -6,15 +6,22 @@ import { RFQUserUI } from '../onboarduser/layout';
 import { DashOutlined, MinusOutlined, PlusCircleFilled, PlusOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { getRfQById } from '@/network/endpoints';
+import { getExchangeRates, getRfQById, postQuotation } from '@/network/endpoints';
 import { strings } from '@/components/strings';
 import { PortUI } from './search';
 import CustomTable, { DragHandle } from '@/components/supportcomponents/rfq/editableTable';
 import { freightCostHead, freightTitle, paymentTermOptions, polChargeOptions, polOptions, shippingLinesOptiopns, unitsOption, uomSeaFcl } from './options';
 import LocodeSelect from '@/components/supportcomponents/customcomponents/locodeselect';
-import { locodeFormatedString } from '@/components/utils';
+import { getPaymentCode, locodeFormatedString } from '@/components/utils';
+import { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC';
 
 const {Column, ColumnGroup} = Table
+const defaultValues = {
+  "polFreeTimeStatus":true,
+  "podFreeTimeStatus":true,
+  "paymentTermsStatus":true,
+  noOfTransShipmentPorts:0
+}
 const OceanFreightForm=({id}:{id?:string | string[] | undefined})=>{
         const [currentStep, setCurrentStep] = useState<number>(0)
         const [state, dispatch] = useReducer(reducerRFQQuata, initialStateRFQQuata);
@@ -93,21 +100,26 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const [freightActive, setfreightActive] = useState<number>(-1)
   const [polActive, setpolActive] = useState<number>(-1)
   const [podActive, setpodActive] = useState<number>(-1)
+  const {data:exchangeRates} = useSWR("/",getExchangeRates)
+  const [currencyCode, setCurrencyCode] = useState("")
+  
 
   const updateQuantity =(value:any,iIndex:number,i=0)=>{
-    console.log(value,iIndex);
-    
     let items = (rfq?.container?rfq?.container:[]).filter((o:any)=>o.name==value)
     if(items.length>0){
       form.setFieldValue(["freightCharge",iIndex,"unit"],items[0].quantity)
-      handleInputChange(iIndex,"unit",value,i)
       handleInputChange(iIndex,"quantity",items[0].quantity,i)
+      handleInputChange(iIndex,"unit",value,i)
+    }else{
+      handleInputChange(iIndex,"quantity",1,i)
+      handleInputChange(iIndex,"unit",value,i)
     }
   }
   // 0 freight charge, 1 polCharge, 2 podCharge,
   const handleInputChange = (id:number,name:string,value:any,type:number=0)=>{
     if(type===1){    
-      setPolChargesData((i:any)=>{
+      setPolChargesData((o:any)=>{
+        let i = [...o]
         i[id][name]=value
         if("rate" === name){
           i[id]["amount"] = value*i[id]?.quantity
@@ -126,9 +138,9 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
       })
       return
     }
-    console.log(id,name,value);
-    
-    setFreightData((i:any)=>{
+    setFreightData((o:any)=>{
+      let i = [...o]
+      
       i[id][name]=value
       if("rate" === name){
         i[id]["amount"] = value*i[id]?.quantity
@@ -138,23 +150,24 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   }
  
   useEffect(() => {
-    console.log(freightData);
     
     let inclusiveFright = 0;
     freightData.forEach((i:any)=>{inclusiveFright += i["amount"]})
-    form.setFieldValue("inclusiveFright",inclusiveFright)
-
+    form.setFieldValue("inclusiveFrightDollar",inclusiveFright)
+    form.setFieldValue("inclusiveFrightLocal",inclusiveFright*(exchangeRate?exchangeRate:1))
+    
     let totalpol = 0;
     polChargesData.forEach((i:any)=>{totalpol += i["amount"]})
-    form.setFieldValue("polCharge",totalpol)
+    form.setFieldValue("polChargeDollar",totalpol)
+    form.setFieldValue("polChargeLocal",totalpol*(exchangeRate?exchangeRate:1))
     
     let totalpod = 0;
     podChargesData.forEach((i:any)=>{totalpod += i["amount"]})
-    form.setFieldValue("podCharge",totalpod)
+    form.setFieldValue("podChargeDollar",totalpod)
+    form.setFieldValue("podChargeLocal",totalpod*(exchangeRate?exchangeRate:1))
 
     let totalLanded = inclusiveFright+totalpol+totalpod
-    form.setFieldValue("totallandedCost",totalLanded)
-    console.log(totalLanded);
+    form.setFieldValue("totallandedCost",totalLanded*(exchangeRate?exchangeRate:1))
     
   }, [freightData,polChargesData,podChargesData])
   
@@ -174,6 +187,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const podFreeTimeStatus = Form.useWatch("podFreeTimeStatus",form)
   const polFreeTimeDeclineValue = Form.useWatch("polFreeTimeDeclineValue",form)
   const podFreeTimeDeclineValue = Form.useWatch("podFreeTimeDeclineValue",form)
+  const exchangeRate = Form.useWatch("exchangeRate",form)
 
   const handleTransshipmentPortChange = (value:any, index:any) => {
     const updatedPorts:any = [...transshipmentPorts];
@@ -182,7 +196,6 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   };
 
   const handleAddRow = (section:any) => {
-    // Add a new row to the specified section
     switch (section) {
       case 'oceanFreight':
         setFreightData([...freightData, {key:freightData.length,  costHead :null,unit:null,quantity:"",currency:"",rate:"",amount:0}]);
@@ -204,14 +217,30 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   };
 
   useEffect(() => {
-    form.setFieldValue("noOfTransShipmentPorts",0)
+    setCurrencyCode("INR")
+    form.setFieldsValue({...defaultValues,rfq:rfq?._id})
   }, [])
   
   const formFinish = (value:any) => {
     let dts = {...value}
     dts.etd = value["etd"].format("YYYY-MM-DD")
+    dts.quotationValidityDate = value["quotationValidityDate"].format("YYYY-MM-DD")
+    dts.portCutOff ={date: value["portCutOff"]["date"].format("YYYY-MM-DD"),time: value["portCutOff"]["time"].format("HH-mm")}
+    dts.siCutOff ={date: value["siCutOff"]["date"].format("YYYY-MM-DD"),time: value["siCutOff"]["time"].format("HH-mm")}
+    dts.shippingLine = Array.isArray(value["shippingLine"]) ? value["shippingLine"][0] : value["shippingLine"]
+    dts.transShipmentPorts = transshipmentPorts
     console.log(dts);
+    return
     
+    postQuotation(dts)
+    .then((r:any)=>{
+      console.log(r.data);
+      
+    })
+    .catch((r:any)=>{
+      console.log(r.data);
+      
+    })
   }
   
   return (
@@ -267,16 +296,32 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
           }
             <Col span={24}>
               <Space>
-                <Form.Item label="Exchange Rates" className='my-2 '>
-                  <Input value={""} addonBefore={"USD/INR"} />
+                <Form.Item name={"exchangeRate"} label="Exchange Rates" className='my-2' layout="horizontal">
+                  <Input addonBefore={"USD"} addonAfter={
+                    <Select showSearch dropdownStyle={{width:"102px"}} options={Object.keys(exchangeRates?.data?exchangeRates?.data:{}).map(r=>({label:r,value:r}))}
+                      onChange={e=>{
+                        form.setFieldValue("exchangeRate",exchangeRates?.data[e])
+                        setCurrencyCode(e)
+                      }}
+                    />
+                  } />
                 </Form.Item>
               </Space>
             </Col>
             <Col span={24}>
                 <Card rootClassName=''>
                     <div className='d-flex flex-column gap-3'>
-                        <Card title={freightTitle(rfq?.modeOfShipment)} styles={{ header: { borderBottom: 0 } }}
-                          
+                        <Card title={
+                          <Space>
+                            {freightTitle(rfq?.modeOfShipment)}
+                              {(rfq?.container?rfq?.container:[]).length>0?
+                              rfq?.container.map((i:any)=>(<Button type="primary" key={`${i?.name}*${i?.quantity}`} className="rounded-pill">{i?.name}*{i?.quantity}</Button>))
+                              :null
+}
+                            </Space> } styles={{header:{ borderBottom: 0 }}}
+                          extra={
+                            null
+                          }
                           >
                             <CustomTable dataSource={freightData}
                               columns={[
@@ -328,7 +373,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                       title: "",
                                       dataIndex: "quantity",
                                       key: "ch2",
-                                      width:40,
+                                      width:50,
                                       render:(_:any,record:any,index:number)=>(
                                           <Input className='p-0 m-0 text-center' variant="borderless" value={freightData[index].quantity} onChange={(e:any)=>handleInputChange(
                                             index,
@@ -343,20 +388,23 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   title: "Currency",
                                   dataIndex: "currency",
                                   key: "currency",
+                                  className:"text-center",
+                                  render:()=>("USD")
                                 },
                                 {
                                   title: "Rate",
                                   dataIndex: "rate",
                                   key: "rate",
+                                  width:75,
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input variant="outlined" className="p-1" value={freightData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value)}/>
+                                    <Input placeholder="Rate" variant="outlined" className="p-1 text-center" value={freightData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value)}/>
                                   ))
                                 },
                                 {
                                   title: "Amount",
                                   dataIndex: "amount",
                                   key: "amount",   
-                              
+                                  className:"text-center",
                                 },
                               ]}
                               setDataSource={setFreightData}
@@ -365,8 +413,15 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                             </CustomTable>
                             <Button className='my-2' shape="round" icon={<PlusCircleFilled className="text-primary1 fs-5" />} onClick={() => handleAddRow('oceanFreight')}>Add New Row</Button>
                             <Col sm={22} md={12}>
-                              <Form.Item name={"inclusiveFright"} label={"Total Landed Cost"} layout="horizontal">
-                                <Input />
+                              <Form.Item  label={"Total Landed Cost"} layout="horizontal">
+                                <Space>
+                                  <Form.Item name={"inclusiveFrightDollar"} noStyle>
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={"USD"} />
+                                  </Form.Item>
+                                  <Form.Item name={"inclusiveFrightLocal"} noStyle>
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={currencyCode} />
+                                  </Form.Item>
+                                </Space>
                               </Form.Item>
                             </Col>
                         </Card>
@@ -451,7 +506,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                       title: "",
                                       dataIndex: "costHeads",
                                       key: "ch2",
-                                      width:40,
+                                      width:60,
                                       render:(_:any,record:any,index:number)=>(
                                           <Input className='p-0 m-0' variant="borderless" value={polChargesData[index]?.quantity} onChange={(e:any)=>handleInputChange(
                                             index,
@@ -467,13 +522,19 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   title: "Currency",
                                   dataIndex: "currency",
                                   key: "currency",
+                                  render:(_:any,record:any,index:number)=>(
+                                    <Select showSearch placeholder="Select" dropdownStyle={{ width: "102px" }} options={Object.keys(exchangeRates?.data ? exchangeRates?.data : {}).map(r => ({ label: r, value: r }))}
+                                      onChange={e => {
+                                        handleInputChange(index,"currency",e,1)
+                                      }}
+                                    />)
                                 },
                                 {
                                   title: "Rate",
                                   dataIndex: "rate",
                                   key: "rate",
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input variant="outlined" className="p-1" value={polChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,1)}/>
+                                    <Input placeholder="Rate" variant="outlined" className="p-1" value={polChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,1)}/>
                                   ))
                                 },
                                 {
@@ -488,13 +549,19 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                 
                             <Button className='my-2' shape="round" icon={<PlusCircleFilled className="text-primary1 fs-5" />}  onClick={() => handleAddRow('polCharges')}>Add New Row</Button>
                             <div className="col-12 col-md-8 col-lg-6">
-                              <Form.Item name={"polRemarks"}>
+                              <Form.Item name={"polRemark"}>
                                 <Input placeholder='Enter Remarks & T&C (If any)' />
                               </Form.Item>
-                              <Form.Item name={"polCharge"} label={"Port of Loading [POL] charges:"} layout="horizontal">
-                                <Input />
-                              </Form.Item>
                             </div>
+                            <Col sm={22} md={12}>
+                            <Form.Item label={"Port of Loading [POL] charges:"} layout="horizontal">
+                                <Space>
+                                  <Form.Item name={"polChargeLocal"} noStyle>
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={"USD"} />
+                                  </Form.Item>
+                                </Space>
+                              </Form.Item>
+                            </Col>
                         </Card>
                         }
                         {!((rfq?.incoterm?rfq?.incoterm:"").toLowerCase().includes("c"))&&
@@ -594,13 +661,20 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   title: "Currency",
                                   dataIndex: "currency",
                                   key: "currency",
+                                  render:(_:any,record:any,index:number)=>(
+                                    <Select showSearch placeholder="Select" dropdownStyle={{ width: "102px" }} options={Object.keys(exchangeRates?.data ? exchangeRates?.data : {}).map(r => ({ label: r, value: r }))}
+                                      onChange={e => {
+                                        handleInputChange(index,"currency",e,2)
+                                      }}
+                                    />
+                                  )
                                 },
                                 {
                                   title: "Rate",
                                   dataIndex: "rate",
                                   key: "rate",
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input variant="outlined" className="p-1" value={podChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,2)}/>
+                                    <Input placeholder="Rate" variant="outlined" className="p-1" value={podChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,2)}/>
                                   ))
                                 },
                                 {
@@ -615,18 +689,27 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                             
                             <Button className='my-2' shape="round" icon={<PlusCircleFilled className="text-primary1 fs-5" />}  onClick={() => handleAddRow('podCharges')}>Add New Row</Button>
                             <div className="col-12 col-md-8 col-lg-6">
-                              <Form.Item name={"podRemarks"}>
+                              <Form.Item rules={[{required:true}]} name={"podRemark"}>
                                 <Input placeholder='Enter Remarks & T&C (If any)' />
                               </Form.Item>
-                              <Form.Item name={"podCharge"} label={"Port of Discharge [POD] charges:"} layout="horizontal">
-                                <Input />
-                              </Form.Item>
                             </div>
+                            <Col sm={22} md={12}>
+                            <Form.Item label={"Port of unLoading [POL] charges:"} layout="horizontal">
+                                <Space>
+                                  <Form.Item name={"podChargeDollar"} noStyle>
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={"USD"} />
+                                  </Form.Item>
+                                  <Form.Item name={"podChargeLocal"} noStyle>
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={currencyCode} />
+                                  </Form.Item>
+                                </Space>
+                              </Form.Item>
+                            </Col>
                         </Card>
                         }
                         <div className="col-12 col-md-8 col-lg-6">
                           <Form.Item name={"totallandedCost"} label={"Total Landed Cost"} className='d-inline' layout="horizontal">
-                              <Input disabled value={calculateTotalLandedCost()} addonBefore={"INR"} className='d-inline' />
+                              <Input disabled value={calculateTotalLandedCost()} addonBefore={currencyCode} className='d-inline' />
                           </Form.Item>
                         </div>
                     </div>
@@ -637,9 +720,12 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                 <Card title="Shipping Line Details" styles={{ header: { borderBottom: 0 } }}>
                     <Row gutter={[16,16]}>
                         <Col sm={24} md={12}>
-                            <Form.Item name={"shippingLine"} label={`Shipping Line`} layout="horizontal">
-                                <Select mode={"tags"} maxCount={1} value={shippingLine} options={shippingLinesOptiopns}/>
+                            <Form.Item rules={[{required:true}]} name={"shippingLine"} label={`Shipping Line`} layout="horizontal">
+                                <Select mode={"tags"} maxCount={1} value={shippingLine} options={shippingLinesOptiopns} onChange={(val,option:any)=>{
+                                  form.setFieldValue("scac", option[0]?.extra)
+                                }}/>
                             </Form.Item>
+                            <Form.Item name={"scac"} noStyle/>
                         </Col>
                         <Col sm={24} md={12}>
                             <Form.Item name={"noOfTransShipmentPorts"} label={`Transshipment Ports`} layout="horizontal">
@@ -659,7 +745,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                 />
                             </Form.Item>
                                   {Array.from({length:noOfTransShipmentPorts}).map((port, index) => (
-                                      <Form.Item label={`T/S Port ${index + 1}`} key={index} layout="horizontal">
+                                      <Form.Item name={["transShipmentPorts",index]} label={`T/S Port ${index + 1}`} key={index} layout="horizontal">
                                           <LocodeSelect
                                             change={()=>{}}
                                             wholeValue={(value:any) => handleTransshipmentPortChange(value.title, index)}
@@ -674,17 +760,17 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                             </Form.Item>
                         </Col>
                         <Col span={24}>
-                            <Form.Item name={"etd"} label={`ETD`} layout="horizontal">
+                            <Form.Item rules={[{required:true}]} name={"etd"} label={`ETD`} layout="horizontal">
                                 <DatePicker  />
                             </Form.Item>
                         </Col>
                         <Col span={24}>
                             <Form.Item label={`SI Cut off Date & Time`} layout="horizontal">
                                 <Space>
-                                <Form.Item name={["siCutOff","date"]} >
+                                <Form.Item rules={[{required:true}]} name={["siCutOff","date"]} >
                                   <DatePicker/>
                                 </Form.Item>
-                                <Form.Item name={["siCutOff","time"]} >
+                                <Form.Item rules={[{required:true}]} name={["siCutOff","time"]} >
                                   <TimePicker/>
                                 </Form.Item>
                                 </Space>
@@ -693,10 +779,10 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                         <Col span={24}>
                             <Form.Item label={`Port Cut off Date & Time`} layout="horizontal">
                               <Space>
-                                <Form.Item name={["portCutOff", "date"]} >
+                                <Form.Item rules={[{required:true}]} name={["portCutOff", "date"]} >
                                   <DatePicker />
                                 </Form.Item>
-                                <Form.Item name={["portCutOff", "time"]} >
+                                <Form.Item rules={[{required:true}]} name={["portCutOff", "time"]} >
                                   <TimePicker />
                                 </Form.Item>
                               </Space>
@@ -707,48 +793,67 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
             </Col>
             <Col span={24}>
                   <Card styles={{body:{paddingBottom:9}}}>
-                      <Row gutter={[16, 16]}>
-                          <Col span={20}>
-                              <Form.Item name={"polFreeTime"} label={`POL Free Time`} layout="horizontal">
+                    <ConfigProvider theme={{components:{Input:{colorFillAlter:"#6A37F4",colorFill:"#FFFFF"}}}}>
+                      <Row gutter={[8, 16]}>
+                          <Col span={16}>
+                              <Form.Item name={"polFreeTimeStatus"} label={`POL Free Time`} layout="horizontal">
                                 <Radio.Group>                                    
-                                    <Radio value="Accept RFQ Terms [10 Days]">Accept RFQ Terms [10 Days]</Radio>
-                                    <Radio value="Change Free Time">Change Free Time</Radio>
+                                    <Radio value={true}>Accept RFQ Terms [{rfq?.freeTimeLP} Days]</Radio>
+                                    <Radio value={false}>Change Free Time</Radio>
                                 </Radio.Group>
                               </Form.Item>
                           </Col>
-                          <Col span={20}>
-                              <Form.Item name={"podFreeTime"} label={`POD Free Time`} layout="horizontal">
+                          { !polFreeTimeStatus &&
+                            <Col span={7}>
+                                <Form.Item name={"polFreeTimeDeclineValue"}  layout="horizontal">
+                                  <Input className="text-center"
+                                      
+                                      addonBefore={<MinusOutlined className="text-light" onClick={e=>form.setFieldValue("polFreeTimeDeclineValue",polFreeTimeDeclineValue>0?polFreeTimeDeclineValue-1:0)} />}
+                                    addonAfter={<PlusOutlined className="text-light" onClick={e=>form.setFieldValue("polFreeTimeDeclineValue",polFreeTimeDeclineValue<150?polFreeTimeDeclineValue+1:150)} />}
+                                  defaultValue={10} type="number"/>
+                                </Form.Item>
+                            </Col>
+                          }
+                          <Col span={16}>
+                              <Form.Item name={"podFreeTimeStatus"} label={`POD Free Time`} layout="horizontal">
                                 <Radio.Group>                                    
-                                    <Radio value={strings.accepted}>Accept RFQ Terms [10 Days]</Radio>
-                                    <Radio value={strings.decline}>Change Free Time</Radio>
+                                <Radio value={true}>Accept RFQ Terms [{rfq?.freeTimeDP} Days]</Radio>
+                                <Radio value={false}>Change Free Time</Radio>
                                 </Radio.Group>
                               </Form.Item>
-                              {
-                              <Form.Item name={"podFreeTimeDeclineValue"} label={`POD Free Time`} layout="horizontal">
-                                <Input type="number"/>
-                              </Form.Item>
-                              }
                           </Col>
+                          { !podFreeTimeStatus &&
+                            <Col span={7}>
+                                  
+                                <Form.Item name={"podFreeTimeDeclineValue"}  layout="horizontal">
+                                  <Input className="text-center"
+                                    addonBefore={<MinusOutlined className="text-light" onClick={e=>form.setFieldValue("podFreeTimeDeclineValue",podFreeTimeDeclineValue>0?podFreeTimeDeclineValue-1:0)} />} 
+                                    addonAfter={<PlusOutlined className="text-light" onClick={e=>form.setFieldValue("podFreeTimeDeclineValue",podFreeTimeDeclineValue<150?podFreeTimeDeclineValue+1:150)} />}
+                                    defaultValue={10} type="number"/>
+                                  </Form.Item>
+                            </Col>
+                          }
                       </Row>
+                      </ConfigProvider>
                   </Card>
             </Col>
             <Col span={24}>
                 <Card styles={{body:{paddingBottom:9}}}>
-                    <Form.Item name={"quotationValidityDate"} label={"Quotation Validity Date"}>
+                    <Form.Item rules={[{required:true}]} name={"quotationValidityDate"} label={"Quotation Validity Date"}>
                         <DatePicker />
                     </Form.Item>
                 </Card>
             </Col>
             <Col span={24}>
                 <Card styles={{body:{paddingBottom:9}}}>
-                    <Form.Item name={"paymentTermsStatus"} label={`Payments Term`} layout="horizontal">
+                    <Form.Item rules={[{required:true}]} name={"paymentTermsStatus"} label={`Payments Term`} layout="horizontal">
                         <Radio.Group>
-                          <Radio value={strings.accepted}>Accept RFQ Terms [NET 30]</Radio>
-                          <Radio value={strings.decline}>Change Payment Terms</Radio>
+                          <Radio value={true}>Accept RFQ Terms [{getPaymentCode(rfq?.paymentTerms)}]</Radio>
+                          <Radio value={false}>Change Payment Terms</Radio>
                         </Radio.Group>
                     </Form.Item>
                     
-                    {paymentTermsStatus===strings.decline&&
+                    {!paymentTermsStatus&&
                     <Form.Item name={"paymentTermsDeclineValue"} label={`Payments Term`}>
                       <Select placeholder="Select payment terms" options={paymentTermOptions.map(i=>({key:i.title,label:`${i.title} - ${i.days}`,value:`${i.title} - ${i.days}`}))} />
                     </Form.Item>
@@ -763,7 +868,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
             </Col>
             <Col span={24}>
                 <Card title="Terms & Conditions" styles={{ header: { borderBottom: 0 } }}>
-                    <Form.Item name={"termsCondition"}>
+                    <Form.Item rules={[{required:true}]} name={"termsCondition"}>
                         <Input placeholder='Enter Here' className='rounded-2'/>
                     </Form.Item>
                 </Card>
@@ -812,7 +917,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   );
 };
 
-export default OceanFreightForm;
+export default AuthHOC(OceanFreightForm);
 function generateRandomNumber(length:number):number {
   const chars = '0123456789';
   let randomString = '';
