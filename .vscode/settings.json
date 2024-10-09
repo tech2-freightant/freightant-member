@@ -1,0 +1,5 @@
+{
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "html.format.wrapLineLength": 0
+}
