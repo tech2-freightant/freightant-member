@@ -1,6 +1,6 @@
 import  axios  from "axios"
 // import { baseURL } from "../utils/utils";
-const baseURL ="http://localhost:5000/api";
+const baseURL =process.env.BACKEND_HOST;
 
 const instance = axios.create({
     baseURL:baseURL, 
