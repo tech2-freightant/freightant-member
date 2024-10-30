@@ -4,6 +4,7 @@ import type { SelectProps } from 'antd';
 import debounce from 'lodash.debounce';
 import { locode } from '@/network/endpoints';
 import { title } from 'process';
+import { isNumber } from '@/components/utils';
 
 export interface DebounceSelectProps<ValueType = any>
   extends Omit<SelectProps<ValueType | ValueType[]>, 'options' | 'children'> {
@@ -61,7 +62,7 @@ interface UserValue {
 async function fetchUserList(username: string): Promise<any> {  
   return locode(username)
          .then(r=>{
-            return r.data.map((i:any)=>({...i,key:(Math.random()*1000).toFixed(0),value:i.id,label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},[${i.Subdivision}] ${i.countryname}`,title:i}))
+            return r.data.map((i:any)=>({...i,key:(Math.random()*1000).toFixed(0),value:i.id,label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},${isNumber(i.Subdivision)?"":`[${i.Subdivision}],`} ${i.countryname}`,title:i}))
          })
          .catch(r=>{
             
@@ -74,6 +75,7 @@ const LocodeSelect = ({change,changeLocation,wholeValue,...props}:{wholeValue?:a
   return (
     <DebounceSelect
       value={value}
+      style={{ width: '90%' }}
       {...props}
       placeholder="Select Port"
       suffixIcon={null}
@@ -88,7 +90,6 @@ const LocodeSelect = ({change,changeLocation,wholeValue,...props}:{wholeValue?:a
         change(newValue?.value);
         setValue(newValue as UserValue[]);
       }}
-      style={{ width: '90%' }}
     />
   );
 };

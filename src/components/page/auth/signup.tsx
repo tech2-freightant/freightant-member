@@ -41,7 +41,7 @@ const SignUpUI = () => {
     // Simulate fetching country options (replace with actual API call)
     useEffect(() => {
         const fetchCountries = async () => {
-            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags,idd'); // Replace with your API endpoint
+            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags,idd,currency'); // Replace with your API endpoint
             const countries = await response.json();
             console.log(countries);
             

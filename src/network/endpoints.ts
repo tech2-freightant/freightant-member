@@ -214,7 +214,7 @@ export async function verifytoken(){
     const response = await instance(`/user/verifytoken`,{headers:{Authorization: "Bearer " + user?.user?.email}})
     return { data: response.data.data, code: true, message: "" };
   } catch (error: any) {
-    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+    return { message: error.response?.data?.message || error?.message, code: false, data: null ,response:error.response };
   }
 }
 
@@ -226,6 +226,35 @@ export async function postQuotation(body:any){
   } catch (error: any) {
     console.log(error.message);
     
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+export async function getQuotationByRfqId(id:string){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance.post(`/rfq/quotation/get/rfqid`,{id},{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    console.log(error.message);
+    
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+export async function getQuotationById(id:string){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance.post(`/rfq/quotation/id`,{id},{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null };
+  }
+}
+export async function getCurrecyByContryName(country:string){
+  try {
+    let user = await getSessionCache()  
+    const response = await axios("https://restcountries.com/v3.1/name/"+country+"?fullText=true&&fields=currencies")
+    return { data: response.data[0].currencies, code: true, message: "" };
+  } catch (error: any) {
     return { message: error.response?.data?.message || error?.message, code: false, data: null };
   }
 }

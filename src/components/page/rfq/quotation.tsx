@@ -1,26 +1,28 @@
 "use client"
-import React, { useEffect, useReducer, useState } from 'react';
-import { Table, Button, Input, Select, Typography, Card, DatePicker, TimePicker, ConfigProvider, Form, Row, Radio, Col, Result, Spin, Space, Checkbox } from 'antd';
+import React, { useContext, useEffect, useReducer, useState } from 'react';
+import { Table, Button, Input, Select, Typography, Card, DatePicker, TimePicker, ConfigProvider, Form, Row, Radio, Col, Result, Spin, Space, Checkbox, Modal, message, Timeline } from 'antd';
 import { ContextRFQQuata, initialStateRFQQuata, reducerRFQQuata, RFQQuataSideUI } from './quotationSideUI';
 import { RFQUserUI } from '../onboarduser/layout';
-import { DashOutlined, MinusOutlined, PlusCircleFilled, PlusOutlined } from '@ant-design/icons';
+import { DashOutlined, DeleteOutlined, EyeFilled, MinusOutlined, PlusCircleFilled, PlusOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { getExchangeRates, getRfQById, postQuotation } from '@/network/endpoints';
+import { getCurrecyByContryName, getExchangeRates, getRfQById, postQuotation } from '@/network/endpoints';
 import { strings } from '@/components/strings';
-import { PortUI } from './search';
+import { PortUI, RFQCard } from './search';
 import CustomTable, { DragHandle } from '@/components/supportcomponents/rfq/editableTable';
-import { freightCostHead, freightTitle, paymentTermOptions, polChargeOptions, polOptions, shippingLinesOptiopns, unitsOption, uomSeaFcl } from './options';
+import { airlinesOptions, freightCostHead, freightTitle, modeOfShipmentOptions, paymentTermOptions, polChargeOptions, polOptions, shippingLinesOptiopns, unitsOption, uomSeaFcl } from './options';
 import LocodeSelect from '@/components/supportcomponents/customcomponents/locodeselect';
-import { getPaymentCode, locodeFormatedString } from '@/components/utils';
+import { getPaymentCode, locodeFormatedString, validateData } from '@/components/utils';
 import { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC';
+import PostSuccessModal from '@/components/supportcomponents/rfq/postSuccessModal';
 
 const {Column, ColumnGroup} = Table
 const defaultValues = {
   "polFreeTimeStatus":true,
   "podFreeTimeStatus":true,
   "paymentTermsStatus":true,
-  noOfTransShipmentPorts:0
+  noOfTransShipmentPorts:0,
+  pointOfContact:[]
 }
 const OceanFreightForm=({id}:{id?:string | string[] | undefined})=>{
         const [currentStep, setCurrentStep] = useState<number>(0)
@@ -93,6 +95,12 @@ const OceanFreightForm=({id}:{id?:string | string[] | undefined})=>{
         )
 }
 const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [Loading, setLoading] = useState(false)
+  const [SuccessModal, setSuccessModal] = useState(false)
+
+  const {state,dispatch} = useContext(ContextRFQQuata)
+
   const [form] = Form.useForm();
   const [freightData, setFreightData] = useState<any>([]);
   const [polChargesData, setPolChargesData] = useState<any>([]);
@@ -102,8 +110,11 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const [podActive, setpodActive] = useState<number>(-1)
   const {data:exchangeRates} = useSWR("/",getExchangeRates)
   const [currencyCode, setCurrencyCode] = useState("")
-  
 
+  const [LoadingCountryCurrency, setLoadingCountryCurrency] = useState("")
+  const [UnLoadingCountryCurrency, setUnLoadingCountryCurrency] = useState("")
+  
+  const updateSteps=(stepTitle:string|React.ReactNode) =>dispatch({ type:'UPDATE_STEP_STATUS', payload: { title: stepTitle, status: 'finish',description:"Completed" } });
   const updateQuantity =(value:any,iIndex:number,i=0)=>{
     let items = (rfq?.container?rfq?.container:[]).filter((o:any)=>o.name==value)
     if(items.length>0){
@@ -122,7 +133,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
         let i = [...o]
         i[id][name]=value
         if("rate" === name){
-          i[id]["amount"] = value*i[id]?.quantity
+          i[id]["amount"] =  value*i[id]?.quantity
         }
         return [...i]
       })
@@ -148,36 +159,64 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
       return [...i]
     })
   }
- 
+  
   useEffect(() => {
     
     let inclusiveFright = 0;
-    freightData.forEach((i:any)=>{inclusiveFright += i["amount"]})
-    form.setFieldValue("inclusiveFrightDollar",inclusiveFright)
-    form.setFieldValue("inclusiveFrightLocal",inclusiveFright*(exchangeRate?exchangeRate:1))
+    freightData.forEach((i:any)=>{
+      if(i?.currency ==="USD"){
+        inclusiveFright = +inclusiveFright + +i["amount"]
+      }else {
+        if (i?.amount > 0 && i?.currency) {
+          const conversionRate = +exchangeRates?.data[i?.currency].toFixed(2);
+          inclusiveFright = +inclusiveFright + (i.amount / conversionRate) * exchangeRates?.data["USD"]
+        }
+      }
+    })
+      form.setFieldValue("inclusiveFrightDollar",inclusiveFright.toFixed(2))
+      form.setFieldValue("inclusiveFrightLocal",(inclusiveFright*(exchangeRate?exchangeRate:1)).toFixed(2))
     
     let totalpol = 0;
-    polChargesData.forEach((i:any)=>{totalpol += i["amount"]})
-    form.setFieldValue("polChargeDollar",totalpol)
-    form.setFieldValue("polChargeLocal",totalpol*(exchangeRate?exchangeRate:1))
+    polChargesData.forEach((i:any)=>{
+      if(i?.currency ==="USD"){
+        totalpol = +totalpol + +i["amount"]
+      }else{
+        if(i?.amount>0 && i?.currency){
+          const conversionRate = +exchangeRates?.data[i?.currency].toFixed(2);
+          totalpol =+totalpol + (i.amount / conversionRate) * exchangeRates?.data["USD"]
+        }
+        }
+    })
+    form.setFieldValue("polChargeDollar",totalpol.toFixed(2))
+    form.setFieldValue("polChargeLocal",(totalpol*(exchangeRate?exchangeRate:1)).toFixed(2))
     
     let totalpod = 0;
-    podChargesData.forEach((i:any)=>{totalpod += i["amount"]})
-    form.setFieldValue("podChargeDollar",totalpod)
-    form.setFieldValue("podChargeLocal",totalpod*(exchangeRate?exchangeRate:1))
+    podChargesData.forEach((i:any)=>{
+      if(i?.currency ==="USD"){
+        totalpod += i["amount"]
+      }else{
+        if(i?.currency && i?.amount>0){
+          const conversionRate = +exchangeRates?.data[i?.currency].toFixed(2);
+          totalpod =+totalpod + (i.amount / conversionRate) * exchangeRates?.data["USD"]
+        }
+      }
+    })
+    if(totalpod>0){
+      form.setFieldValue("podChargeDollar",totalpod.toFixed(2))
+      form.setFieldValue("podChargeLocal",(totalpod*(exchangeRate?exchangeRate:1)).toFixed(2))
+    }
 
     let totalLanded = inclusiveFright+totalpol+totalpod
-    form.setFieldValue("totallandedCost",totalLanded*(exchangeRate?exchangeRate:1))
+    
+    if(totalLanded>0){
+      form.setFieldValue("totallandedCost",(totalLanded*(exchangeRate?exchangeRate:1)).toFixed(2))
+    }
     
   }, [freightData,polChargesData,podChargesData])
   
   // SS
   const [transshipmentPorts, setTransshipmentPorts] = useState([]);
   const [etd, setEtd] = useState(new Date());
-  const [siCutOffDate, setSiCutOffDate] = useState(new Date());
-  const [siCutOffTime, setSiCutOffTime] = useState(new Date());
-  const [portCutOffDate, setPortCutOffDate] = useState(new Date());
-  const [portCutOffTime, setPortCutOffTime] = useState(new Date());
 
   const noOfTransShipmentPorts = Form.useWatch("noOfTransShipmentPorts",form)
   const paymentTermsStatus = Form.useWatch("paymentTermsStatus",form)
@@ -188,6 +227,67 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const polFreeTimeDeclineValue = Form.useWatch("polFreeTimeDeclineValue",form)
   const podFreeTimeDeclineValue = Form.useWatch("podFreeTimeDeclineValue",form)
   const exchangeRate = Form.useWatch("exchangeRate",form)
+  const siCutOff = Form.useWatch("siCutOff",form)
+  const termsCondition = Form.useWatch("termsCondition",form)
+  const quotationValidityDate = Form.useWatch("quotationValidityDate",form)
+  const transitTime = Form.useWatch("transitTime",form)
+
+  useEffect(() => {
+    let value = form.getFieldsValue()
+    if(validateData(freightData,"Freight").length<1 && freightData.length>0){
+      updateSteps(initialStateRFQQuata[0].title)
+    }
+    if(validateData(polChargesData,"Freight").length<1 && polChargesData.length>0){
+      updateSteps(initialStateRFQQuata[1].title)
+    }
+    if(validateData(podChargesData,"Freight").length<1 && podChargesData.length>0){
+      updateSteps(initialStateRFQQuata[2].title)
+    }
+    if(shippingLine && 
+        etd && 
+        value["portCutOff"]["date"] && 
+        value["portCutOff"]["time"] &&
+        value["siCutOff"]["date"] &&
+        value["siCutOff"]["time"]
+    ){
+      updateSteps(initialStateRFQQuata[3].title)
+    }
+    let cp = 0;
+    if(!polFreeTimeStatus && polFreeTimeDeclineValue) cp++
+    if(!podFreeTimeStatus && podFreeTimeDeclineValue) cp++
+    if(polFreeTimeStatus) cp++
+    if(podFreeTimeStatus) cp++
+    if(cp === 2) updateSteps(initialStateRFQQuata[4].title)
+
+    if(quotationValidityDate){
+      updateSteps(initialStateRFQQuata[5].title)
+    }
+    if(!paymentTermsStatus && paymentTermsDeclineValue){
+      updateSteps(initialStateRFQQuata[6].title)
+    }
+    if(paymentTermsStatus){
+      updateSteps(initialStateRFQQuata[6].title)
+    }
+    if(termsCondition){
+      updateSteps(initialStateRFQQuata[7].title)
+    }
+
+  },[
+    freightData,
+    polChargesData,
+    podChargesData,
+    shippingLine,
+    etd,
+    siCutOff,
+    polFreeTimeStatus,
+    polFreeTimeDeclineValue,
+    podFreeTimeStatus,
+    podFreeTimeDeclineValue,
+    quotationValidityDate,
+    paymentTermsStatus,
+    paymentTermsDeclineValue,
+    termsCondition
+  ])
 
   const handleTransshipmentPortChange = (value:any, index:any) => {
     const updatedPorts:any = [...transshipmentPorts];
@@ -198,13 +298,13 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   const handleAddRow = (section:any) => {
     switch (section) {
       case 'oceanFreight':
-        setFreightData([...freightData, {key:freightData.length,  costHead :null,unit:null,quantity:"",currency:"",rate:"",amount:0}]);
+        setFreightData([...freightData, {key:generateRandomNumber(4),  costHead :null,unit:null,quantity:"",currency:"USD",rate:"",amount:0}]);
         break;
       case 'polCharges':
         setPolChargesData([...polChargesData, {key:generateRandomNumber(4),costCategory:null,  costHead :null,unit:"",quantity:"",currency:"",rate:"",amount:0}]);
         break;
       case 'podCharges':
-        setPodChargesData([...podChargesData, {key:podChargesData.length,costCategory:null,  costHead :null,unit:"",quantity:"",currency:"",rate:"",amount:0}]);
+        setPodChargesData([...podChargesData, {key:generateRandomNumber(4),costCategory:null,  costHead :null,unit:"",quantity:"",currency:"",rate:"",amount:0}]);
         break;
       default:
         break;
@@ -217,30 +317,83 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
   };
 
   useEffect(() => {
-    setCurrencyCode("INR")
+    if(rfq?.loadingPortObj?.currency){
+      setCurrencyCode(rfq?.loadingPortObj?.currency)
+      form.setFieldValue("podCurrencyCode",rfq?.dischargePortObj?.currency)
+      form.setFieldValue("polCurrencyCode",rfq?.loadingPortObj?.currency)
+    }
+    else{
+      getCurrecyByContryName(rfq?.placeOfLoading?.country)
+      .then(r=>{
+        setCurrencyCode(Object.keys(r.data)[0])      
+        form.setFieldValue("polCurrencyCode",Object.keys(r.data)[0])
+        setLoadingCountryCurrency(Object.keys(r.data)[0])
+      })
+      .catch(r=>{});
+      if(rfq?.modeOfShipment === strings.crossBorderTrucking){
+        getCurrecyByContryName(rfq?.placeOfUnLoading?.country)
+        .then(r=>{
+          setUnLoadingCountryCurrency(Object.keys(r.data)[0])
+          console.log(Object.keys(r.data));
+          console.log(Object.keys(r.data)[0]);          
+          form.setFieldValue("podCurrencyCode",Object.keys(r.data)[0])
+        })
+        .catch(r=>{})        
+      }
+    }
     form.setFieldsValue({...defaultValues,rfq:rfq?._id})
   }, [])
+
+  useEffect(() => {
+    if(exchangeRates){
+      form.setFieldValue("exchangeRate", exchangeRates?.data[currencyCode])
+    }
+    return () => {}
+  }, [currencyCode,exchangeRates])
+  
   
   const formFinish = (value:any) => {
     let dts = {...value}
     dts.etd = value["etd"].format("YYYY-MM-DD")
     dts.quotationValidityDate = value["quotationValidityDate"].format("YYYY-MM-DD")
-    dts.portCutOff ={date: value["portCutOff"]["date"].format("YYYY-MM-DD"),time: value["portCutOff"]["time"].format("HH-mm")}
-    dts.siCutOff ={date: value["siCutOff"]["date"].format("YYYY-MM-DD"),time: value["siCutOff"]["time"].format("HH-mm")}
+    dts.portCutOff ={date: value["portCutOff"]["date"].format("YYYY-MM-DD"),time: value["portCutOff"]["time"].format("HH:mm")}
+    dts.siCutOff ={date: value["siCutOff"]["date"].format("YYYY-MM-DD"),time: value["siCutOff"]["time"].format("HH:mm")}
     dts.shippingLine = Array.isArray(value["shippingLine"]) ? value["shippingLine"][0] : value["shippingLine"]
     dts.transShipmentPorts = transshipmentPorts
-    console.log(dts);
-    return
+    if(freightData.length < 1){
+      message.error("Please add at least one freight row")
+      return
+    }
+
+    let freightError = validateData(freightData,"Freight")
+    let polError = validateData(polChargesData,"POL")
+    let podError = validateData(podChargesData,"POD")
+    console.log(polError,podError);
     
+    let errors = [...freightError,...podError,...polError]
+    if(errors.length>0){
+      errors.forEach(i=>message.error(i))
+      return
+    }
+    dts.freightData = (freightData?freightData:[]).map((i:any)=>({...i,costHead:[i.costHead]?.[0]}))
+    dts.polChargesData = (polChargesData?polChargesData:[]).map((i:any)=>({...i,costHead:i.costHead?.[0],costCategory:[i.costCategory]?.[0]}))
+    dts.podChargesData = (podChargesData?podChargesData:[]).map((i:any)=>({...i,costHead:i.costHead?.[0],costCategory:[i.costCategory]?.[0]}))
+    
+    
+    setLoading(true)
     postQuotation(dts)
     .then((r:any)=>{
-      console.log(r.data);
-      
+      console.log(r);      
+      if(r.code){
+        setSuccessModal(true)
+      }
     })
     .catch((r:any)=>{
       console.log(r.data);
       
-    })
+    }).finally(()=>{
+      setLoading(false)
+    });
   }
   
   return (
@@ -260,6 +413,8 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
             <Form.Item className='mb-1'>
               <Input value={rfq?.incoterm} disabled className='border rounded-pill p-1  text-center' />
             </Form.Item>
+            <Form.Item noStyle name={"polCurrencyCode"}/>
+            <Form.Item noStyle name={"podCurrencyCode"}/>
           </Space>
           </Col>
           {
@@ -273,7 +428,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
           {
             rfq?.dischargePort&&
           <Col span={12}>
-            <Form.Item label="Port of Loading" layout="vertical">
+            <Form.Item label="Port of UnLoading" layout="vertical">
                 <PortUI i={rfq?.dischargePortObj} />
             </Form.Item>
           </Col>
@@ -289,22 +444,15 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
           {
             (rfq?.placeOfUnLoading && !rfq?.dischargePort)&&
           <Col span={12}>
-            <Form.Item label="Place of Loading" layout="vertical">
-              <Input className='rounded-2' value={`${rfq?.placeOfUnLoading?.rfq?.address}, ${rfq?.placeOfUnLoading?.rfq?.city}, ${rfq?.placeOfUnLoading?.rfq?.state}, ${rfq?.placeOfUnLoading?.country}`} />
+            <Form.Item label="Place of UnLoading" layout="vertical">
+              <Input className='rounded-2' value={`${rfq?.placeOfUnLoading?.address}, ${rfq?.placeOfUnLoading?.city?rfq?.placeOfUnLoading?.city:""}, ${rfq?.placeOfUnLoading?.state}, ${rfq?.placeOfUnLoading?.country}`} />
             </Form.Item>
           </Col>
           }
             <Col span={24}>
               <Space>
                 <Form.Item name={"exchangeRate"} label="Exchange Rates" className='my-2' layout="horizontal">
-                  <Input addonBefore={"USD"} addonAfter={
-                    <Select showSearch dropdownStyle={{width:"102px"}} options={Object.keys(exchangeRates?.data?exchangeRates?.data:{}).map(r=>({label:r,value:r}))}
-                      onChange={e=>{
-                        form.setFieldValue("exchangeRate",exchangeRates?.data[e])
-                        setCurrencyCode(e)
-                      }}
-                    />
-                  } />
+                  <Input readOnly addonBefore={"USD/"+currencyCode} />
                 </Form.Item>
               </Space>
             </Col>
@@ -329,7 +477,14 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   key: 'sort',
                                   align: 'center',
                                   width: 30,
-                                  render: () => <DragHandle />,
+                                  render: (_:any,record:any,index:number) =>(
+                                    <Space size="small">
+                                      <DragHandle />
+                                      <Button className="p-0" type="link" disabled={freightData[index]?.costHead?.length===0} onClick={()=>setFreightData(deleteAtIndex(freightData,index))}>
+                                        <DeleteOutlined />
+                                      </Button>
+                                    </Space>
+                                      ),
                                 },
                                 {
                                   title: "Cost heads",
@@ -397,7 +552,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   key: "rate",
                                   width:75,
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input placeholder="Rate" variant="outlined" className="p-1 text-center" value={freightData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value)}/>
+                                    <Input placeholder="Rate" disabled={!freightData[index].unit} variant="outlined" className="p-1 text-center" value={freightData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value)}/>
                                   ))
                                 },
                                 {
@@ -433,7 +588,14 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   key: 'sort',
                                   align: 'center',
                                   width: 30,
-                                  render: () => <DragHandle />,
+                                  render: (_:any,record:any,index:number) =>(
+                                    <Space size="small">
+                                      <DragHandle />
+                                      <Button className="p-0" type="link" disabled={polChargesData[index]?.costHead?.length===0} onClick={()=>setPolChargesData(deleteAtIndex(polChargesData,index))}>
+                                        <DeleteOutlined />
+                                      </Button>
+                                    </Space>
+                                      ),
                                 },
                                 {
                                   title: "Cost Category",
@@ -449,7 +611,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   dataIndex: "costHead",
                                   key: "costHead",
                                   width:"230px",
-                                  className:"text-wrap",
+                                  className:"text-wrap p-1",
                                   render:(_:any,record:any,index:number)=>(
                                       <Select
                                       onFocus={()=>setpolActive(record.key)}                                      
@@ -468,10 +630,10 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   )
                                 },
                                 {
-                                  title: "Receipted",
+                                  title: "Receipt",
                                   dataIndex: "receipted",
                                   key: "costHead",
-                                  width:50,
+                                  width:30,
                                   className:"text-wrap",
                                   render:(_:any,record:any,index:number)=>(
                                     <div className="w-100 d-flex justify-content-center">
@@ -495,7 +657,9 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                       key: "ch1",
                                       width:100,
                                       render:(_:any,record:any,index:number)=>(
-                                          <Select className='w-100 text-wrap' value={polChargesData[index]?.unit} variant="borderless" options={
+                                          <Select className='w-100 text-wrap' value={polChargesData[index]?.unit} variant="borderless" 
+                                          style={{maxWidth:"70px"}}
+                                          options={
                                             unitsOption(rfq?.modeOfShipment)
                                           } placeholder=""
                                           dropdownStyle={{width:"240px"}}
@@ -505,10 +669,11 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                     {
                                       title: "",
                                       dataIndex: "costHeads",
-                                      key: "ch2",
+                                      key: "quantity",
                                       width:60,
+                                      className: "text-center",
                                       render:(_:any,record:any,index:number)=>(
-                                          <Input className='p-0 m-0' variant="borderless" value={polChargesData[index]?.quantity} onChange={(e:any)=>handleInputChange(
+                                          <Input className='p-0 m-0 text-center' variant="borderless" value={polChargesData[index]?.quantity} onChange={(e:any)=>handleInputChange(
                                             index,
                                             "quantity",
                                             e.target.value,
@@ -522,8 +687,10 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   title: "Currency",
                                   dataIndex: "currency",
                                   key: "currency",
+                                  className:"p-0",
                                   render:(_:any,record:any,index:number)=>(
-                                    <Select showSearch placeholder="Select" dropdownStyle={{ width: "102px" }} options={Object.keys(exchangeRates?.data ? exchangeRates?.data : {}).map(r => ({ label: r, value: r }))}
+                                    <Select rootClassName="p-0 m-0" placeholder="Select" dropdownStyle={{ width: "102px" }} options={getCurrencyOPtion(rfq?.loadingPortObj?.currency,LoadingCountryCurrency).map((i:any)=>({label:i,value:i}))}
+                                      disabled={!polChargesData[index].unit}
                                       onChange={e => {
                                         handleInputChange(index,"currency",e,1)
                                       }}
@@ -534,7 +701,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   dataIndex: "rate",
                                   key: "rate",
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input placeholder="Rate" variant="outlined" className="p-1" value={polChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,1)}/>
+                                    <Input disabled={!polChargesData[index].unit} placeholder="Rate" variant="outlined" className="p-1" value={polChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,1)}/>
                                   ))
                                 },
                                 {
@@ -554,10 +721,10 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                               </Form.Item>
                             </div>
                             <Col sm={22} md={12}>
-                            <Form.Item label={"Port of Loading [POL] charges:"} layout="horizontal">
+                            <Form.Item label={"Port of Loading [POL] charges"} layout="horizontal">
                                 <Space>
                                   <Form.Item name={"polChargeLocal"} noStyle>
-                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={"USD"} />
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={currencyCode} />
                                   </Form.Item>
                                 </Space>
                               </Form.Item>
@@ -572,7 +739,14 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   key: 'sort',
                                   align: 'center',
                                   width: 30,
-                                  render: () => <DragHandle />,
+                                  render: (_:any,record:any,index:number) =>(
+                                    <Space size="small">
+                                      <DragHandle />
+                                      <Button className="p-0" type="link" disabled={podChargesData[index]?.costHead?.length===0} onClick={()=>setPodChargesData(deleteAtIndex(podChargesData,index))}>
+                                        <DeleteOutlined />
+                                      </Button>
+                                    </Space>
+                                      ),
                                 },
                                 {
                                   title: "Cost Category",
@@ -616,7 +790,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                     <div className="w-100 d-flex justify-content-center">
                                       <Checkbox                                      
                                       className=''
-                                      value={podChargesData[index]?.receipted}
+                                      checked={podChargesData[index]?.receipted}
                                       onChange={(value) => {      
                                         handleInputChange(index,"receipted",value,2)
                                       }}/>
@@ -634,7 +808,9 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                       key: "ch1",
                                       width:100,
                                       render:(_:any,record:any,index:number)=>(
-                                          <Select className='w-100 text-wrap' value={podChargesData[index]?.unit} variant="borderless" options={
+                                          <Select className='w-100 text-wrap' value={podChargesData[index]?.unit} variant="borderless"
+                                          style={{maxWidth:"70px"}}
+                                          options={
                                             unitsOption(rfq?.modeOfShipment)
                                           } placeholder=""
                                           dropdownStyle={{width:"240px"}}
@@ -662,8 +838,9 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   dataIndex: "currency",
                                   key: "currency",
                                   render:(_:any,record:any,index:number)=>(
-                                    <Select showSearch placeholder="Select" dropdownStyle={{ width: "102px" }} options={Object.keys(exchangeRates?.data ? exchangeRates?.data : {}).map(r => ({ label: r, value: r }))}
-                                      onChange={e => {
+                                    <Select placeholder="Select" dropdownStyle={{ width: "102px" }} options={getCurrencyOPtion(rfq?.dischargePortObj?.currency,UnLoadingCountryCurrency).map((i:any)=>({label:i,value:i}))}
+                                    disabled={!podChargesData[index].unit}
+                                    onChange={e => {
                                         handleInputChange(index,"currency",e,2)
                                       }}
                                     />
@@ -674,7 +851,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   dataIndex: "rate",
                                   key: "rate",
                                   render:((_:any,record:any,index:number)=>(
-                                    <Input placeholder="Rate" variant="outlined" className="p-1" value={podChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,2)}/>
+                                    <Input disabled={!podChargesData[index].unit} placeholder="Rate" variant="outlined" className="p-1" value={podChargesData[index].rate} onChange={e=>handleInputChange(index,"rate",e.target.value,2)}/>
                                   ))
                                 },
                                 {
@@ -694,13 +871,13 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                               </Form.Item>
                             </div>
                             <Col sm={22} md={12}>
-                            <Form.Item label={"Port of unLoading [POL] charges:"} layout="horizontal">
+                            <Form.Item label={"Port of unLoading [POD] charges"} layout="horizontal">
                                 <Space>
                                   <Form.Item name={"podChargeDollar"} noStyle>
                                     <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={"USD"} />
                                   </Form.Item>
                                   <Form.Item name={"podChargeLocal"} noStyle>
-                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={currencyCode} />
+                                    <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={UnLoadingCountryCurrency} />
                                   </Form.Item>
                                 </Space>
                               </Form.Item>
@@ -715,20 +892,31 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                     </div>
                 </Card>
             </Col>
-
+            {rfq?.modeOfShipment !== strings.crossBorderTrucking &&
             <Col span={24}>
                 <Card title="Shipping Line Details" styles={{ header: { borderBottom: 0 } }}>
                     <Row gutter={[16,16]}>
-                        <Col sm={24} md={12}>
-                            <Form.Item rules={[{required:true}]} name={"shippingLine"} label={`Shipping Line`} layout="horizontal">
-                                <Select mode={"tags"} maxCount={1} value={shippingLine} options={shippingLinesOptiopns} onChange={(val,option:any)=>{
+                          <Col sm={24} md={12}>
+                        {rfq?.modeOfShipment === strings.air?
+
+                          <Form.Item rules={[{required:true}]} name={"airline"} label={`Airline`} layout="horizontal">
+                                <Select mode={"tags"} maxCount={1}  options={airlinesOptions.map((o:any)=>({...o,value:o?.label}))} onChange={(val,option:any)=>{
+                                  form.setFieldValue("scac", option[0]?.extra)
+                                }}/>
+                            </Form.Item>
+                        :
+                        <>
+                          <Form.Item rules={[{required:true}]} name={"shippingLine"} label={`Shipping Line`} layout="horizontal">
+                                <Select mode={"tags"} maxCount={1} value={shippingLine}  options={shippingLinesOptiopns.map((o:any)=>({...o,label:`${o?.value} - ${o?.label}`}))} onChange={(val,option:any)=>{
                                   form.setFieldValue("scac", option[0]?.extra)
                                 }}/>
                             </Form.Item>
                             <Form.Item name={"scac"} noStyle/>
+                        </>
+                          }
                         </Col>
                         <Col sm={24} md={12}>
-                            <Form.Item name={"noOfTransShipmentPorts"} label={`Transshipment Ports`} layout="horizontal">
+                            <Form.Item name={"noOfTransShipmentPorts"} label={`Transshipment ${rfq?.modeOfShipment === strings.air?"Airports":"Ports"}`} layout="horizontal">
                                 <Input placeholder={noOfTransShipmentPorts}
                                   className='text-center'
                                     addonBefore={<MinusOutlined onClick={e=>form.setFieldValue("noOfTransShipmentPorts",noOfTransShipmentPorts>0?noOfTransShipmentPorts-1:0)} />} 
@@ -737,27 +925,46 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                             </Form.Item>
                         </Col>
                         <Col span={24} className='border rounded-2 border-primary2 p-2'>
-                            <h5 className='text-primary2'>Transshipment Ports</h5>
-                            <Form.Item label={`Port of Loading`} layout="horizontal">
-                              <LocodeSelect
-                                {...{value: locodeFormatedString(rfq?.loadingPortObj) }}
-                                change={()=>{}}
-                                />
+                            <div className="d-flex justify-content-between">
+                            <h5 className='text-primary2'>Transshipment {rfq?.modeOfShipment === strings.air?"Airports":"Ports"}</h5>
+                            <Form.Item name={"transitTime"} label={`Transit time`} layout="horizontal">
+                                <Input placeholder={noOfTransShipmentPorts}
+                                  className='text-center'
+                                    addonBefore={<MinusOutlined onClick={e=>form.setFieldValue("transitTime",transitTime>0?transitTime-1:0)} />} 
+                                    addonAfter={<PlusOutlined onClick={e=>form.setFieldValue("transitTime",transitTime?transitTime+1:1)} />}
+                                    />
                             </Form.Item>
-                                  {Array.from({length:noOfTransShipmentPorts}).map((port, index) => (
-                                      <Form.Item name={["transShipmentPorts",index]} label={`T/S Port ${index + 1}`} key={index} layout="horizontal">
+                            </div>
+                            <Space style={{minWidth:"400px"}}>
+                              <Timeline
+                                style={{ padding: 10, margin: 10 }}
+                                mode="left"
+                                rootClassName=''
+                                items={
+                                  [ 
+                                    ...[{ label: `Port of Loading`, children: rfq?.loadingPortObj?<PortUI {...{style:{minWidth:"300px",maxWidth:"370px"}}} i={rfq?.loadingPortObj} /> :
+                                      <Input.TextArea style={{minWidth:"300px",maxWidth:"370px"}} className='rounded-2' value={`${rfq?.placeOfLoading?.address}, ${rfq?.placeOfLoading?.city}, ${rfq?.placeOfLoading?.state}, ${rfq?.placeOfLoading?.country}`} />
+                                    }],
+                                    ...Array.from({length:noOfTransShipmentPorts}).map((port, index) => ({ 
+                                      label: `T/S Port ${index + 1}`, 
+                                      children: (
+                                        <Form.Item name={["transShipmentPorts", index]} layout="horizontal">
                                           <LocodeSelect
-                                            change={()=>{}}
-                                            wholeValue={(value:any) => handleTransshipmentPortChange(value.title, index)}
-                                            />
-                                      </Form.Item>
-                                  ))}
-                            <Form.Item label={`Port of UnLoading`} layout="horizontal">
-                              <LocodeSelect
-                                {...{value: locodeFormatedString(rfq?.dischargePortObj)}}
-                                change={()=>{}}
-                                />
-                            </Form.Item>
+                                            {...{style:{minWidth:"300px",maxWidth:"370px"}}}
+                                            change={() => { }}
+                                            wholeValue={(value: any) => handleTransshipmentPortChange(value.title, index)}
+                                          />
+                                        </Form.Item>
+                                      ) 
+                                    })),
+                                    ...[{ label: `Port of Discharge`, children:rfq?.dischargePortObj? <PortUI {...{style:{minWidth:"300px",maxWidth:"370px"}}} i={rfq?.dischargePortObj} /> 
+                                    :
+                                    <Input.TextArea style={{minWidth:"300px",maxWidth:"370px"}} className='rounded-2' value={`${rfq?.placeOfUnLoading?.address}, ${rfq?.placeOfUnLoading?.city}, ${rfq?.placeOfUnLoading?.state}, ${rfq?.placeOfUnLoading?.country}`} />
+                                    }],
+                                  ]
+                                }
+                              />
+                            </Space>
                         </Col>
                         <Col span={24}>
                             <Form.Item rules={[{required:true}]} name={"etd"} label={`ETD`} layout="horizontal">
@@ -791,6 +998,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                     </Row>
                 </Card>
             </Col>
+            }
             <Col span={24}>
                   <Card styles={{body:{paddingBottom:9}}}>
                     <ConfigProvider theme={{components:{Input:{colorFillAlter:"#6A37F4",colorFill:"#FFFFF"}}}}>
@@ -809,7 +1017,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                   <Input className="text-center"
                                       
                                       addonBefore={<MinusOutlined className="text-light" onClick={e=>form.setFieldValue("polFreeTimeDeclineValue",polFreeTimeDeclineValue>0?polFreeTimeDeclineValue-1:0)} />}
-                                    addonAfter={<PlusOutlined className="text-light" onClick={e=>form.setFieldValue("polFreeTimeDeclineValue",polFreeTimeDeclineValue<150?polFreeTimeDeclineValue+1:150)} />}
+                                    addonAfter={<PlusOutlined className="text-light" onClick={e=>form.setFieldValue("polFreeTimeDeclineValue",polFreeTimeDeclineValue<150?polFreeTimeDeclineValue+1:14)} />}
                                   defaultValue={10} type="number"/>
                                 </Form.Item>
                             </Col>
@@ -828,7 +1036,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                 <Form.Item name={"podFreeTimeDeclineValue"}  layout="horizontal">
                                   <Input className="text-center"
                                     addonBefore={<MinusOutlined className="text-light" onClick={e=>form.setFieldValue("podFreeTimeDeclineValue",podFreeTimeDeclineValue>0?podFreeTimeDeclineValue-1:0)} />} 
-                                    addonAfter={<PlusOutlined className="text-light" onClick={e=>form.setFieldValue("podFreeTimeDeclineValue",podFreeTimeDeclineValue<150?podFreeTimeDeclineValue+1:150)} />}
+                                    addonAfter={<PlusOutlined className="text-light" onClick={e=>form.setFieldValue("podFreeTimeDeclineValue",podFreeTimeDeclineValue<150?podFreeTimeDeclineValue+1:14)} />}
                                     defaultValue={10} type="number"/>
                                   </Form.Item>
                             </Col>
@@ -899,7 +1107,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                         }
                         <br />
                       <Button onClick={()=>add({name:""})}  className="my-4 rounded-pill">
-                      <PlusCircleFilled className="text-primary1 fs-5" /> Add POC
+                        <PlusCircleFilled className="text-primary1 fs-5" /> Add POC
                       </Button>
                       </>
                     )
@@ -909,9 +1117,18 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
             </Col>               
             <Col span={24}>
                 <div className="col-12 col-md-8 col-lg-6 mx-auto">
-                  <Button htmlType="submit" type="primary" size="large" block shape="round">Submit quotation</Button>
+                  <Button  type="link" onClick={()=>setPreviewModalOpen(true)} size="large" block shape="round">Preview Offer <EyeFilled/></Button>
+                </div>
+                <div className="col-12 col-md-8 col-lg-6 mx-auto">
+                  <Button loading={Loading} htmlType="submit" type="primary" size="large" block shape="round">Submit quotation</Button>
                 </div>
             </Col>             
+            <Modal open={previewModalOpen} onCancel={()=>setPreviewModalOpen(i=>!i)} width={1000} onClose={()=>setPreviewModalOpen(i=>!i)} footer={<Button onClick={()=>setPreviewModalOpen(i=>!i)}>Close</Button>}>
+                <RFQCard rfqData={rfq} showSubmit />
+            </Modal>
+            <Modal open={SuccessModal} footer={null} closable={false}>
+              <PostSuccessModal id={""} message="Quotation Submitted" />
+            </Modal>
         </Row>
     </Form>
   );
@@ -924,9 +1141,17 @@ function generateRandomNumber(length:number):number {
   for (let i = 0; i < length; i++) {
     randomString += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  console.log(+randomString);
-  
   return +randomString;   
 
 }
 
+let getCurrencyOPtion = (currency:string,second:string) =>["USD", currency?currency:second]
+
+function deleteAtIndex(arr:any, index:number) {
+  // Check if the index is valid
+  if (index < 0 || index >= arr.length) {
+      return arr; // Return the original array if index is out of bounds
+  }
+  // Create a new array without the element at the specified index
+  return [...arr.slice(0, index), ...arr.slice(index + 1)];
+}

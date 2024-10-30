@@ -88,6 +88,7 @@ const CustomTable = ({columns,dataSource,setDataSource}) => {
           columns={columns}
           dataSource={dataSource}
           style={{maxWidth: '100%'}}
+          rowClassName={"text-center"}
         />
       </SortableContext>
     </DndContext>

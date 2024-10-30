@@ -144,3 +144,108 @@ a {
   background: rgba(255,255,255,.2);
   border-radius: 6px;
 }
+
+
+/* TABLE CSS */
+
+.table-container {
+  border: 1px solid #6A37F4 !important;;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  h6 {
+    font-size: 1.3rem;
+  }
+}
+
+.table-header .header-tag-content {
+  padding: 5px 15px;
+  border-radius: 30px;
+  background-color: rgb(243,246,255);
+  color: #6A37F4 !important;
+  font-weight: 500;
+}
+
+.card-content {
+  background-color: #fff;
+}
+
+.cust-table {
+  border: 1px solid #6A37F4 !important;;
+}
+
+.currency-total {
+  font-size: 1.5rem;
+}
+
+.shipping-details-header {
+  p {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  span {
+    border: 1px solid #6A37F4 !important;;
+    width: 70px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 30px;
+  }
+}
+
+.shippment-port-container {
+  border: 1px solid #6A37F4 !important;;
+  border-radius: 10px;
+}
+
+.transshipment-card-label{
+  p{
+    font-size: 1rem;
+    font-weight: 400;
+  }
+}
+
+.tranship-card{
+  background: rgb(243,246,255);
+}
+
+.submit-form-btn{
+  background-color: #a261fd;
+  color: #fff;
+  font-weight: 500;
+}
+
+.left-card{
+  span{
+    font-size: 1rem;
+    font-weight: 400;
+  }
+}
+
+.tag-content{
+  background-color: rgb(243,246,255);
+  /* width: 150px; */
+  padding: 5px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50px;
+}
+
+.primary-bg-color{
+  background-color: #a261fd;
+  color: #fff;
+}
+
+/* TABLE CSS */

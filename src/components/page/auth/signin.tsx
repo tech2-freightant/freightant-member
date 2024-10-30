@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
 import { assetsRootPath } from "@/components/utils";
 import Link from 'next/link';
@@ -13,7 +13,9 @@ import { useRouter } from 'next/navigation';
 const SignInUI = () => {
     const router = useRouter()
     const [form] = Form.useForm()
+    const [formLoading, setformLoading] = useState(false)
     const handleFinish=(user:{email:string,password:String})=> { 
+        setformLoading(true)
         signIn("credentials",{email:user.email,password:user.password,redirect:false}).then((r)=> {  
             if(r?.ok && r?.status!==401){
                 router.replace("/")
@@ -22,7 +24,7 @@ const SignInUI = () => {
             }
         }).catch((err)=> {
             console.log("err ", err.message);            
-        });
+        }).catch(()=>{setformLoading(false)});
     }
     return (
         <motion.div
@@ -46,7 +48,7 @@ const SignInUI = () => {
                         <a href="#" className="float-end mb-2">
                             Forgot Password?
                         </a>
-                            <Button htmlType="submit" type="primary" block shape="round">Login</Button>
+                            <Button htmlType="submit" type="primary" block shape="round" loading={formLoading}>Login</Button>
                         
                     </Form>
                     <div className="freightant-signup mt-1">

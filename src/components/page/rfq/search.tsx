@@ -8,7 +8,7 @@ import { layParams3 } from './post';
 import { DownloadOutlined, DownOutlined, SearchOutlined } from '@ant-design/icons';
 import LocodeSelect from '@/components/supportcomponents/customcomponents/locodeselect';
 import { CountrySelect, CountrySelectV2, StateSelectV4 } from '@/components/supportcomponents/customcomponents/stateselect';
-import { validateMessages } from '@/components/utils';
+import { locodeFormatedString, validateMessages } from '@/components/utils';
 import { getRfQ, locodeById } from '@/network/endpoints';
 import useSWR from 'swr';
 import dayjs from 'dayjs';
@@ -217,7 +217,7 @@ function RfqSearchUI() {
 
 export default RfqSearchUI
 
-const RFQCard = ({ rfqData }:{rfqData:any}) => {
+export const RFQCard = ({ rfqData ,showSubmit}:{rfqData:any,showSubmit?:boolean}) => {
   const [form] = Form.useForm();
   const {
     _id,
@@ -342,7 +342,7 @@ const RFQCard = ({ rfqData }:{rfqData:any}) => {
                       </Col>
                       <Col {...lParams}>
                         <Form.Item label={"Weight"} layout="vertical">
-                          <Input value={cargoDetail?.totalGrossWeight} disabled className='text-center' />
+                          <Input value={cargoDetail?.totalGrossWeight || cargoDetail?.weight} disabled className='text-center' />
                       </Form.Item>                        
                       </Col>
                       {
@@ -530,12 +530,12 @@ const RFQCard = ({ rfqData }:{rfqData:any}) => {
               </Row>
             </Card>
             <Col span={24} className='my-2'>
-              <div className="d-flex justify-content-between mx-0">
+              {!showSubmit&&<div className="d-flex justify-content-between mx-0">
                 <Button icon={<DownloadOutlined className="fw-bold fs-5 text-primary2"/>} >Download as pdf</Button>
-                <Link href={"/rfq/quotation?rfq="+_id}>
+                <Link target="_blank" href={"/rfq/quotation?rfq="+_id}>
                   <Button type="primary" >Submit quotation</Button>
                 </Link>
-              </div>
+              </div>}
             </Col>
           </Collapse.Panel>
         </Collapse>
@@ -553,9 +553,21 @@ const lParams={
 }
 
 const TextUI = ({children}: {children?:string})=> <span className='bg-shade text-primary1 p-1 px-3 rounded-pill'>{children}</span>
-export const PortUI = ({i}:{i:any})=>{
+export const PortUI = ({i,...props}:{i:any,props?:any})=>{
   
-  return <Input disabled className='border rounded-2 bg-light' value={`${i?.emoji} ${i?.Country}${i?.Location} - ${i?.Name},[${i?.Subdivision}] ${i?.countryname}`}/>
+  return (
+    <ConfigProvider
+    theme={{
+      "components": {
+        "Input": {
+          colorBgContainerDisabled: "rgb(243,246,255)",
+          colorTextDisabled: "rgba(69, 17, 151, 1)",
+          "colorBorder": "rgb(243,246,255)",
+          borderRadius:48,
+        },}}}>
+          <Input {...props} disabled className='border rounded-2 bg-light' value={locodeFormatedString(i)}/>
+        </ConfigProvider>
+        )
 }
 const columns = [
   {

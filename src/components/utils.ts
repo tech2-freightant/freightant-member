@@ -52,7 +52,10 @@ function CBMCalculate(length: number, breadth: number, height: number, dimension
 }
 
 export const locodeFormatedString = (locodeObj:any):string=>{
-  return `${locodeObj?.emoji} ${locodeObj?.Country}${locodeObj?.Location} - ${locodeObj?.Name},[${locodeObj?.Subdivision}] ${locodeObj?.countryname}`
+  if (locodeObj === null || locodeObj === undefined) {
+    return '';
+}
+  return `${locodeObj?.emoji} ${locodeObj?.Country}${locodeObj?.Location} - ${locodeObj?.Name},${isNumber(locodeObj.Subdivision)?"":`[${locodeObj.Subdivision}],`} ${locodeObj?.countryname}`
 } 
 
 export {assetsRootPath, errorMessage, validateMessages, inter, updateArray,CBMCalculate}
@@ -64,4 +67,71 @@ export const getPaymentCode = (paymentCode:string)=>{
   } else{
     return strings.others
   }
+}
+
+export function validateData(data:any[],fieldName:string) {
+  const errors:any = [];
+
+  data.forEach((item,index) => {
+
+    if (!item.costHead) {
+      errors.push('Missing or invalid costHead in '+fieldName +" at "+index+1);
+    }
+
+    if (!item.unit ) {
+      errors.push('Missing or invalid unit in '+fieldName +" at "+index+1);
+    }
+
+    if (!item.quantity || item.quantity <= 0) {
+      errors.push('Missing or invalid quantity in '+fieldName +" at "+index+1);
+    }
+    if(fieldName !== "Freight"){
+      if (!item.currency) {
+        errors.push('Missing or invalid currency in '+fieldName +" at "+index+1);
+      }
+    }
+
+    if (!item.rate || item.rate <= 0) {
+      errors.push('Missing or invalid rate in '+fieldName +" at "+index+1);
+    }
+
+    if (!item.amount ||  item.amount <= 0) {
+      errors.push('Missing or invalid amount in '+fieldName +" at "+index+1);
+    }
+  });
+
+  return errors;
+}
+
+export function processValues(obj:any, status:boolean, value1:any, value2:any, conditionFunc?:any) {
+  // Validate using the condition function if provided
+  if (typeof conditionFunc === 'function') {
+      const isValid = conditionFunc(obj);
+      if (!isValid) {
+          console.log("Condition validation failed.");
+          return;
+      }
+  }
+
+  // Check the status and return the appropriate value
+  const result = status ? value1 : value2;
+  return result;
+}
+
+export function isNumber(value:string|number):boolean {
+  
+  
+  return Number.isFinite(+value);
+}
+export function camelCaseToSpaceSeparated(input:any):string {
+  // Null check
+  if (input === null || input === undefined) {
+      return '';
+  }
+  
+  // Convert camelCase to space-separated
+  return input
+      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space before uppercase letters
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Handle acronyms
+      .trim(); // Remove any leading or trailing spaces
 }
