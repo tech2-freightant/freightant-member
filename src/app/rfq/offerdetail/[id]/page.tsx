@@ -50,7 +50,7 @@ function OfferDetail({ params }: { params: { id: string } }) {
       <Row className='card-content rounded-3 p-4 my-2' gutter={[15, 15]}>
         <Col xs={24} md={9}>
           <div className="d-flex flex-column gap-2">
-            <span className='fw-semibold fs-5'>Port of Landing</span>
+            <span className='fw-semibold fs-5'>Port of Loading</span>
                 <PortUI i={d?.data?.rfq?.loadingPortObj}/>
           </div>
         </Col>
@@ -88,11 +88,18 @@ function OfferDetail({ params }: { params: { id: string } }) {
             </Col>
             <Col xs={24}>
                 <div className="card-content rounded-3 p-4">
-                    <h3>Shipping Line Details</h3>
+                    <h3>{d?.data?.rfq?.modeOfShipment===strings.air?`Air`:`Shipping `}Line Details</h3>
                     <div className="d-flex gap-4 my-3">
-                        <div className="shipping-details-header d-flex align-items-center gap-2">
+                        {d?.data?.shippingLine&&
+                          <div className="shipping-details-header d-flex align-items-center gap-2">
                             <p className='mb-0'>Shipping Line</p><span>{d?.data?.shippingLine}</span>
                         </div>
+                        }
+                        {d?.data?.airline&&
+                          <div className="shipping-details-header d-flex align-items-center gap-2">
+                            <p className='mb-0'>AirLine</p><span>{d?.data?.airline}</span>
+                        </div>
+                        }
                         <div className="shipping-details-header d-flex align-items-center gap-2">
                             <p className='mb-0'>Transshipment Ports</p><span>{d?.data?.noOfTransShipmentPorts}</span>
                         </div>

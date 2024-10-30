@@ -357,7 +357,9 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
     dts.etd = value["etd"].format("YYYY-MM-DD")
     dts.quotationValidityDate = value["quotationValidityDate"].format("YYYY-MM-DD")
     dts.portCutOff ={date: value["portCutOff"]["date"].format("YYYY-MM-DD"),time: value["portCutOff"]["time"].format("HH:mm")}
-    dts.siCutOff ={date: value["siCutOff"]["date"].format("YYYY-MM-DD"),time: value["siCutOff"]["time"].format("HH:mm")}
+    if(rfq?.modeOfShipment !== strings.air ){
+      dts.siCutOff ={date: value["siCutOff"]["date"].format("YYYY-MM-DD"),time: value["siCutOff"]["time"].format("HH:mm")}
+    }
     dts.shippingLine = Array.isArray(value["shippingLine"]) ? value["shippingLine"][0] : value["shippingLine"]
     dts.transShipmentPorts = transshipmentPorts
     if(freightData.length < 1){
@@ -378,7 +380,11 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
     dts.freightData = (freightData?freightData:[]).map((i:any)=>({...i,costHead:[i.costHead]?.[0]}))
     dts.polChargesData = (polChargesData?polChargesData:[]).map((i:any)=>({...i,costHead:i.costHead?.[0],costCategory:[i.costCategory]?.[0]}))
     dts.podChargesData = (podChargesData?podChargesData:[]).map((i:any)=>({...i,costHead:i.costHead?.[0],costCategory:[i.costCategory]?.[0]}))
-    
+    if(dts.airline){
+      if(dts.airline.length>0 && Array.isArray(dts.airline)){
+        dts.airline = dts.airline[0]
+      }
+    }
     
     setLoading(true)
     postQuotation(dts)
@@ -971,18 +977,21 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                                 <DatePicker  />
                             </Form.Item>
                         </Col>
-                        <Col span={24}>
-                            <Form.Item label={`SI Cut off Date & Time`} layout="horizontal">
-                                <Space>
-                                <Form.Item rules={[{required:true}]} name={["siCutOff","date"]} >
-                                  <DatePicker/>
-                                </Form.Item>
-                                <Form.Item rules={[{required:true}]} name={["siCutOff","time"]} >
-                                  <TimePicker/>
-                                </Form.Item>
-                                </Space>
-                            </Form.Item>
-                        </Col>
+                        {
+                          rfq?.modeOfShipment !== strings.air &&
+                          <Col span={24}>
+                              <Form.Item label={`SI Cut off Date & Time`} layout="horizontal">
+                                  <Space>
+                                  <Form.Item rules={[{required:true}]} name={["siCutOff","date"]} >
+                                    <DatePicker/>
+                                  </Form.Item>
+                                  <Form.Item rules={[{required:true}]} name={["siCutOff","time"]} >
+                                    <TimePicker/>
+                                  </Form.Item>
+                                  </Space>
+                              </Form.Item>
+                          </Col>
+                        }
                         <Col span={24}>
                             <Form.Item label={`Port Cut off Date & Time`} layout="horizontal">
                               <Space>
