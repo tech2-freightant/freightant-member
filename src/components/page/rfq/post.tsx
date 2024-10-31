@@ -338,6 +338,8 @@ const PostRFQUI=()=>{
                           changeLocation={(country:string,state:string)=>{
                             form.setFieldValue(["placeOfLoading","country"],country)
                             form.setFieldValue(["placeOfLoading","state"],state)
+                            form.setFieldValue(["addOnService", "placeOfLoading", "country"],country)
+
                           }}
                           />
                       </Form.Item>
@@ -1224,7 +1226,7 @@ const PostRFQUI=()=>{
                     <Form.Item label="Show contact details with RFQ" name="showContactDetails" layout="horizontal">
                     <Switch checkedChildren={"Yes"} unCheckedChildren={"No"} checked={showContact} onChange={(e:any)=>{
                       form.setFieldValue("showContact",e)
-                      form.setFieldValue("pointOfContact",[])
+                      form.setFieldValue("pointOfContact",[{name:"",email:"",mobile:""}])
                       }} />
                   </Form.Item>
                   }
@@ -1234,7 +1236,7 @@ const PostRFQUI=()=>{
                       <>
                         {
                           fields.map(( field, iIndex ) => (
-                            <div className='d-flex gap-2 my-3' key={iIndex+"poc"}>
+                            <div className='d-flex gap-2 my-1' key={iIndex+"poc"}>
                               <Form.Item label="Name" name={[field.name,"name"]} layout="vertical" rules={[{ required: true}]}>
                                 <Input />
                               </Form.Item>
@@ -1244,7 +1246,7 @@ const PostRFQUI=()=>{
                               <Form.Item label="Email ID" rules={[{required:true},{type:"email",message: 'Please enter correct email'}]} name={[field.name,"email"]} layout="vertical">
                                 <Input />
                               </Form.Item>
-                              <Form.Item layout="vertical">
+                              <Form.Item layout="vertical" label=" ">
                                 <Button shape="circle" size="small" onClick={()=>remove(iIndex)} danger className='fw-bold' >-</Button>
                               </Form.Item>
                             </div>
@@ -1252,7 +1254,7 @@ const PostRFQUI=()=>{
                             
                         }
                         <br />
-                      <Button onClick={()=>add({name:""})}  className="my-4 rounded-pill">
+                      <Button onClick={()=>add({name:""})}  className="rounded-pill">
                       <PlusCircleFilled className="text-primary1 fs-5" /> Add POC
                       </Button>
                       </>

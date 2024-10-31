@@ -225,7 +225,7 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
                     <CitySelect label="City" name="city" onChange={form} f={form} stateId={stateId} />
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label="pincode" name="pincode" rules={[{ required: true},FormRules.pincodes]}>
+                    <Form.Item label="Pincode" name="pincode" rules={[{ required: true},FormRules.pincodes]}>
                         <Input type="number" />
                     </Form.Item>
                 </Col>

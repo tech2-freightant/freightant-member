@@ -126,7 +126,7 @@ const QuotationCard = ({ quotation }:{quotation:any}) => {
                 <Col span={24}>
                     <Space className="border rounded-2 px-2 py-1">
                         <p className='m-0'>{freightTitle(rfq?.modeOfShipment)}</p>
-                        <p className='m-0'>USD {inclusiveFrightLocal}</p>
+                        <p className='m-0'>USD {inclusiveFrightDollor}</p>
                     </Space>
                 </Col>
                 <Col span={24}>
@@ -144,7 +144,7 @@ const QuotationCard = ({ quotation }:{quotation:any}) => {
                 <Col span={24}>
                     <Space className="border rounded-2 px-2 py-1 my-1">
                         <p className='m-0'>Total Landed Cost:</p>
-                        <p className='m-0'>{podCurrencyCode} {totallandedCost}</p>
+                        <p className='m-0'>{polCurrencyCode} {totallandedCost}</p>
                     </Space>
                 </Col>
             </Row>

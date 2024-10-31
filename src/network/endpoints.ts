@@ -208,6 +208,15 @@ export async function getExchangeRates(){
   }
 }
 
+export async function token(){
+  try {
+    let user = await getSessionCache()  
+    const response = await instance(`/user/verifytoken`,{headers:{Authorization: "Bearer " + user?.user?.email}})
+    return { data: response.data.data, code: true, message: "" };
+  } catch (error: any) {
+    return { message: error.response?.data?.message || error?.message, code: false, data: null ,response:error.response };
+  }
+}
 export async function verifytoken(){
   try {
     let user = await getSessionCache()  

@@ -574,7 +574,7 @@ const FormUI = ({id,rfq}:{rfq:any,id:any}) => {
                             </CustomTable>
                             <Button className='my-2' shape="round" icon={<PlusCircleFilled className="text-primary1 fs-5" />} onClick={() => handleAddRow('oceanFreight')}>Add New Row</Button>
                             <Col sm={22} md={12}>
-                              <Form.Item  label={"Total Landed Cost"} layout="horizontal">
+                              <Form.Item  label={freightTitle(rfq?.modeOfShipment)} layout="horizontal">
                                 <Space>
                                   <Form.Item name={"inclusiveFrightDollar"} noStyle>
                                     <Input disabled className="rounded-pill bg-shade text-primary1" variant="borderless" style={{width:"150px"}} addonBefore={"USD"} />
