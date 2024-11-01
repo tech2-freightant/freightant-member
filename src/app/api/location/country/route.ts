@@ -17,7 +17,7 @@ export async function GET() {
       return NextResponse.json({code:true, data:res});
     } catch (error) {
       console.error(error);
-      return NextResponse.json({code:false, er: error.message});
+      return NextResponse.json({code:false, error: "Database Error"});
     }
   }
 export async function POST(request: Request) {
