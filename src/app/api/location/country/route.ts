@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     try {
-      const connection = await pool.getConnection();
       const query = 'SELECT `id`,`name`,`iso3`,`phonecode`,`currency`,`currency_symbol`,`emoji` FROM countries';
       let res 
       if(process.env.ENV){
@@ -11,6 +10,7 @@ export async function GET() {
         res = await sql`SELECT id,name,iso3,phonecode,currency,currency_symbol,emoji FROM countries`
       }else{
         console.log("lp");
+        const connection = await pool.getConnection();
         const [rows] = await connection.execute(query);
         connection.release();        
       }
