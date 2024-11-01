@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import postgres from 'postgres'
 
-let pool:mysql.Pool  
+let pool:mysql.Pool  = mysql.createPool({})
 if(!process.env.ENV){
   pool= mysql.createPool({
     host: process.env.DB_HOST,
