@@ -7,7 +7,7 @@ export const modeOfShipmentOptions =[
     strings.air,
     strings.crossBorderTrucking,
 ]
-
+ 
 export const incotermOptions = ["CIF", "CFR", "CPT", "CIP", "DAP", "DPU", "DDP"]
 export const tradeTypeOptions = [strings.export,strings.import]
 export const standardContainersOptions = ['20FT', '40FT', '40FT HQ', '45FT HQ']
