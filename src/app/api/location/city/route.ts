@@ -1,4 +1,4 @@
-import pool from "@/network/db/connection";
+import  { sql } from "@/network/db/connection";
 import { NextResponse } from "next/server";
 
 type Params = {
@@ -8,10 +8,7 @@ type Params = {
   export async function GET(request: Request, context: { params: Params }) {
     try {
         const q = request.url.split('?');        
-        const connection = await pool.getConnection();
-        const query = 'SELECT `id`,`name` FROM cities WHERE state_id = ' + q[1];
-        const [rows] = await connection.execute(query);
-        connection.release();
+        const rows = await sql`select id,name from cities where state_id = ${q[1]}`
         return NextResponse.json({code:true, data:rows});
     } catch (error) {
         console.error(error);

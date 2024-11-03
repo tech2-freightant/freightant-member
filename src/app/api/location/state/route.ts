@@ -1,4 +1,4 @@
-import pool from "@/network/db/connection";
+import { sql } from "@/network/db/connection";
 import { NextResponse } from "next/server";
 
 type Params = {
@@ -7,11 +7,9 @@ type Params = {
    
   export async function GET(request: Request, context: { params: Params }) {
     try {
-        const q = request.url.split('?');        
-        const connection = await pool.getConnection();
-        const query = 'SELECT `id`,`name` FROM states WHERE country_id = ' + q[1];
-        const [rows] = await connection.execute(query);
-        connection.release();
+        const q = request.url.split('?');  
+        const rows = await sql`SELECT id,name FROM states WHERE country_id =  ${q[1]}`;
+
         return NextResponse.json({code:true, data:rows});
     } catch (error) {
         console.error(error);
@@ -21,12 +19,9 @@ type Params = {
   export async function POST(request: Request, context: { params: Params }) {
     try {
         const {q} = await request.json();
-        const connection = await pool.getConnection();
-        const query = `SELECT s.id,s.name FROM countries c
+        const rows = sql`SELECT s.id,s.name FROM countries c
         INNER JOIN states s ON c.id = s.country_id
-        WHERE c.name ="${q}"`;
-        const [rows] = await connection.execute(query);
-        connection.release();
+        WHERE c.name =${q}`
         return NextResponse.json({code:true, data:rows});
     } catch (error) {
         console.error(error);
