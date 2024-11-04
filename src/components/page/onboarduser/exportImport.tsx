@@ -24,8 +24,14 @@ const ExportImportUI = () => {
     const {data, error,isLoading} = useSWR("/",getUser)
     const searchParams = useSearchParams()
     const updateCount=(e:number)=>{
-        if(e<currentStep){
+        if(e===0){
+            push("/onboarduser/exporter");
             setCurrentStep(e)
+        }else{
+            if(e<currentStep){
+                setCurrentStep(e)
+                push("/onboarduser/exporter?page="+e);
+            }
         }
     }
     useEffect(()=>{
@@ -142,12 +148,12 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
         let errors: string[] = []
         values.emergencyContactEmail.forEach((element: string) => {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(element)) {
-                errors.push("Invalid Email")
+                errors.push("Invalid Emergency Email")
             }
         });
         values.emergencyContactNumber.forEach((element: string) => {
             if (!/^\d{10}$/.test(element)) {
-                errors.push("Invalid Phone Number")
+                errors.push("Invalid Emergency Phone Number")
             }
         })
         if (errors.length > 0) {
@@ -166,6 +172,39 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
             })
     };
 
+    useEffect(()=>{
+        getOrg()
+        .then(r=>{
+            console.log(r.data);
+            if(r.code){
+                form.setFieldsValue({
+                    companyName: r.data.companyName,
+                    businessType: r.data.businessType,
+                    iec: r.data.iec,
+                    gst:r.data.gst,
+                    registration:r.data.registration,
+                    country: r.data.country,
+                    emergencyContactName: r.data.emergencyContactName,
+                    emergencyContactEmail: r.data.emergencyContactEmail,
+                    emergencyContactNumber: r.data.emergencyContactNumber,
+                    pointSalesPricingTeam: r.data.pointSalesPricingTeam,
+                    address: r.data.address,
+                    registeredOfficeAddress: r.data.registeredOfficeAddress,
+                    city: r.data.city,
+                    state: r.data.state,
+                    pincode: r.data.pincode,
+                    website: r.data.website,
+                    yearOfIncorporation: r.data.yearOfIncorporation,
+                    annualTurnover: r.data.annualTurnover,
+                    annualVolumeTuesByOcean: r.data.annualVolumeTuesByOcean,
+                    annualVolumeMtByAir: r.data.annualVolumeMtByAir,
+                })    
+            }
+        })
+        .catch(r=>{
+            console.log(r);
+        })
+    },[])
     const layout = {};
 
     return (
@@ -348,6 +387,33 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
     const layout = {};
 
 
+    useEffect(()=>{
+        getOrg()
+        .then(r=>{
+            if(r.code){
+                
+                form.setFieldsValue({
+                    iecCopy:r.data?.iecCopy,
+                    panCopy:r.data?.panCopy,
+                    gstCopy:r.data?.gstCopy,
+                    aadhaarCopy:r.data?.aadhaarCopy,
+                    registrationCertificate:r.data?.registrationCertificate,
+                    tradeLicense:r.data?.tradeLicense,
+                    proofOfBussinessAddressCopy:r.data?.proofOfBussinessAddressCopy,
+                    exportPromotionOrganisationMembership:r.data?.exportPromotionOrganisationMembership,
+                    exportPromotionOrganisationMembershipDocument:r.data?.exportPromotionOrganisationMembershipDocument,
+                    aeo:r.data?.aeo,
+                    aeoCopy:r.data?.aeoCopy,
+                    starExportHouseRating:r.data?.starExportHouseRating,
+                    starExportHouse:r.data?.starExportHouse,
+                    SEHC:r.data?.SEHC,
+                })
+            }
+        })
+        .catch(r=>{
+            
+        })
+    },[])
 
     return (
         <Form {...layout} validateMessages={validateMessages} layout="vertical" form={form} onFinish={onFinish} onFinishFailed={onFinishFailed}>
@@ -359,19 +425,19 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                 <Row gutter={[48, 0]} className='mt-2'>
                     {/* IEC Copy */}
                     <Col {...responsiveItemLayout}>
-                        <CustomFormUpload required style f={form} label="IEC Copy" name={"iec"} />
+                        <CustomFormUpload required style f={form} label="IEC Copy" name={"iecCopy"} />
                     </Col>
 
                     {/* GST Copy */}
                     <Col {...responsiveItemLayout}>
-                        <CustomFormUpload required style f={form} label="GST Copy" name={"gst"}/>
+                        <CustomFormUpload required style f={form} label="GST Copy" name={"gstCopy"}/>
                     </Col>
                 </Row>
 
                 <Row gutter={[48, 0]}>
                     {/* Company PAN Copy */}
                     <Col {...responsiveItemLayout}>
-                        <CustomFormUpload required style f={form} label="Company PAN Copy" name={"pan"} />
+                        <CustomFormUpload required style f={form} label="Company PAN Copy" name={"panCopy"} />
                     </Col>
 
                     {/* Company Registration Certificate */}
@@ -387,12 +453,12 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     </Col>
                     {/* Director's/Partner's ID Card */}
                     <Col {...responsiveItemLayout}>
-                        <CustomFormUpload required style f={form} label="Director's/Partner's ID Card (Passport/DL/Aadhar)" name={"aadhaar"} />
+                        <CustomFormUpload required style f={form} label="Director's/Partner's ID Card (Passport/DL/Aadhar)" name={"aadhaarCopy"} />
                     </Col>
 
                     {/* Proof of Business Address */}
                     <Col {...responsiveItemLayout}>
-                    <CustomFormUpload required style f={form} label="Proof of Business Address (Utility Bill/Lease agreement)" name={"proofOfBussiness"}/>
+                    <CustomFormUpload required style f={form} label="Proof of Business Address (Utility Bill/Lease agreement)" name={"proofOfBussinessAddressCopy"}/>
                     </Col>
                 </Row>
 
@@ -410,7 +476,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                 </Form.Item>
                 <Row gutter={[48, 0]}>
                     <Col span={24} >
-                        <Form.Item name={"AEO"} label="AEO Certificate">
+                        <Form.Item name={"aeo"} label="AEO Certificate">
                             <Radio.Group optionType="default">
                                 <Radio.Button value="Yes">Yes</Radio.Button>
                                 <Radio.Button value="No">No</Radio.Button>
@@ -419,7 +485,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     </Col>
                     {AEO === "Yes" &&
                         <Col {...responsiveItemLayout} >
-                            <CustomFormUpload required style f={form} label={false} name={"aeo"} />
+                            <CustomFormUpload required style f={form} label={false} name={"aeoCopy"} />
                         </Col>}
                 </Row>
                 <Row gutter={[48, 0]}>
@@ -466,13 +532,33 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
 const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
     const [fileList, setFileList] = useState([]);
     const AEO = useWatch("AEO", { form:f });
-
+    useEffect(()=>{
+        getOrg()
+        .then(r=>{
+            if(r.code){
+                
+                f.setFieldsValue({
+                    iecCopy:r.data?.iecCopy,
+                    registrationCertificate:r.data?.registrationCertificate,
+                    taxRegistrationCopy:r.data?.taxRegistrationCopy,
+                    directorNationalId:r.data?.directorNationalId,
+                    proofOfBussinessAddressCopy:r.data?.proofOfBussinessAddressCopy,
+                    chamberOfCommerceTradeAssociation:r.data?.chamberOfCommerceTradeAssociation,
+                    aeo:r.data?.aeo,
+                    aeoCopy:r.data?.aeoCopy,
+                })
+            }
+        })
+        .catch(r=>{
+            
+        })
+    },[])
     return (
         <div className='p-2'>
             <h3 className='text-primary2 my-4'>Upload KYC documents [ Global ]</h3>
             <Row gutter={16}>
                 <Col xs={24} sm={24} md={12} lg={12}>
-                    <CustomFormUpload required style f={f} name={"iec"} label={"Import / Export license"} />
+                    <CustomFormUpload required style f={f} name={"iecCopy"} label={"Import / Export license"} />
                 </Col>
                 <Col xs={24} sm={24} md={12} lg={12}>
                     <CustomFormUpload required style f={f} name={"registrationCertificate"} label={"Company Registration certificate"} />
@@ -494,7 +580,7 @@ const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
             </Row>
             <Row gutter={[48, 0]}>
                     <Col span={24} >
-                        <Form.Item name={"AEO"} label="AEO Certificate">
+                        <Form.Item name={"aeo"} label="AEO Certificate">
                             <Radio.Group optionType="default">
                                 <Radio.Button value="Yes">Yes</Radio.Button>
                                 <Radio.Button value="No">No</Radio.Button>
@@ -592,7 +678,22 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
       fetchData();
     }, [currentStep]);
     
-    
+    useEffect(()=>{
+        getOrg()
+        .then(r=>{
+            if(r.code){
+                
+                if((r.data?.branches?r.data?.branches:[]).length>0){
+                    form.setFieldValue("branches",r.data.branches)
+                }else{
+                    form.setFieldValue("branches",[{}])
+                }
+            }
+        })
+        .catch(r=>{
+            
+        })
+    },[])
     return (
       <Form layout="vertical" initialValues={{"branches":[{}]}} validateMessages={validateMessages} form={form} onFinish={onFinish}>
         <h3 className={`text-primary2`}>{title}</h3>

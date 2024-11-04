@@ -1,5 +1,5 @@
 "use client"
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import React, { Dispatch, forwardRef, SetStateAction, useEffect, useState } from 'react'
 import OnboardUserUI from './layout'
 import { BranchDetailsForm, SideUI, responsiveItemLayout } from './exportImport'
 import { Button, Card, Checkbox, Col, DatePicker, Form, FormInstance, Input, Radio, Row, Select, Space, Spin, Upload, message } from 'antd'
@@ -78,10 +78,9 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
         setCurrency((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].currency_symbol)
     }
 
-    // Simulate fetching country options (replace with actual API call)
     useEffect(() => {
         const fetchCountries = async () => {
-            const response = await getCountry() // Replace with your API endpoint
+            const response = await getCountry() 
             const countries = await response.data;
 
             setCountryList(countries.map((country: any) => ({
@@ -89,8 +88,6 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
                 value: country.name,
                 ...country
             })));
-
-
         };
         fetchCountries();
     }, []);
@@ -130,6 +127,15 @@ const KYCForm = ({ setCurrentStep }: { setCurrentStep: Dispatch<SetStateAction<n
     const layout = {
     };
 
+    useEffect(()=>{
+        getOrg()
+        .then(r=>{
+            console.log(r,"h");            
+        })
+        .catch(r=>{
+            console.log(r,"h");            
+        })
+    },[])
     return (
         <Form
             {...layout}
@@ -462,8 +468,22 @@ const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
     );
 };
 
-export const CustomFormUpload = ({ f, name, label, style = false, maxCount = 1, required = false }: { required?: boolean, maxCount?: number, style?: boolean, label: any, name: any, f: FormInstance<any> }) => {
+export const CustomFormUpload = ({ f, name, label, style = false, maxCount = 1, required = false, orgFile ,}: {orgFile?:any,required?: boolean, maxCount?: number, style?: boolean, label: any, name: any, f: FormInstance<any> }) => {
     const [token, setToken] = useState<any>("")
+    const [fileList,setFileList] = useState<any[]>([])
+    const fvalue = Form.useWatch(style ? name : [name, "file"],f)
+    useEffect(()=>{
+        let vexist =f.getFieldValue(style ? name : [name, "file"])
+        if(vexist){
+            if(typeof vexist === 'string'){
+                setFileList([{name:vexist}])
+            }else{
+                if(vexist?.fileList){
+                    setFileList([{...vexist.fileList[0],name:vexist?.file.name}])
+                }
+            }
+        }   
+    },[fvalue])
     useEffect(() => {
         getSessionCache()
             .then(r => setToken(r.user?.email))
@@ -484,6 +504,7 @@ export const CustomFormUpload = ({ f, name, label, style = false, maxCount = 1, 
                 action={strings.uploadEndPoint}
                 name="file"
                 data={{ cname: name }}
+                fileList={fileList}
                 headers={{ Authorization: 'Bearer ' + token }}
             >
                 <Button block icon={<UploadOutlined />}>Upload File</Button>

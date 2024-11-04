@@ -17,7 +17,6 @@ function UnAuthHOC(WrappedComponent: React.FC) {
       getSessionCache()
       .then(session=>{
         if(session?.user){
-          console.log(session);
           
           setSession(session)
           if(pathname.includes("signin") || pathname.includes("signup")){
@@ -78,7 +77,6 @@ export function AuthHOC(WrappedComponent: React.FC) {
       let checkLogin = async()=>{
         let cacheSessions = await getSessionCache()
         let vtoken = await verifytoken()
-        console.log(vtoken);
         
         if(vtoken.code){
           setSession(cacheSessions)
