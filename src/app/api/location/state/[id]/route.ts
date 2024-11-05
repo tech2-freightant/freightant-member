@@ -2,14 +2,14 @@ import { sql } from "@/network/db/connection";
 import { NextResponse } from "next/server";
 
 type Params = {
-    team: string
+    id: number
   }
    
   export async function GET(request: Request, context: { params: Params }) {
     try {
-        const q = request.url.split('?');  
-        const rows = await sql`SELECT id,name FROM states WHERE country_id =  ${q[1]}`;
-
+        const q = context.params?.id 
+        const rows = await sql`SELECT id,name FROM states WHERE country_id =  ${q}`;
+        
         return NextResponse.json({code:true, data:rows});
     } catch (error) {
         console.error(error);

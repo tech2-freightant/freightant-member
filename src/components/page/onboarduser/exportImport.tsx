@@ -112,6 +112,7 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
     const handleCountrySelect = (e: any) => {
         setCountryId((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].id)
         setCurrency((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].currency_symbol)
+        form.setFieldValue("state", "")
     }
 
     useEffect(() => {
@@ -232,16 +233,6 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label={<>{+countryId === 101?"IEC Code":"Import / Export License no. "}</>} name="iec" rules={[{ required: true,  }]}>
-                        <Input />
-                    </Form.Item>
-                </Col>
-                <Col xs={22} sm={22} md={12} lg={12}>
-                    <Form.Item label={<>{+countryId === 101?"GST Number":"Company Registration Number"}</>} name={+countryId === 101?"gst":"registration"} rules={[{ required: true,  }]}>
-                        <Input />
-                    </Form.Item>
-                </Col>
-                <Col xs={22} sm={22} md={12} lg={12}>
                     <Form.Item label="Country" name="country" rules={[{ required: true,  }]}>
                         <Select
                             showSearch
@@ -271,6 +262,16 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
                 <Col xs={22} sm={22} md={24} lg={24}>
                     <Form.Item label="Registered Office Address" name="registeredOfficeAddress" rules={[{ required: true,  }]}>
                         <Input.TextArea rows={2} />
+                    </Form.Item>
+                </Col>
+                <Col xs={22} sm={22} md={12} lg={12}>
+                    <Form.Item label={<>{+countryId === 101?"IEC Code":"Import / Export License no. "}</>} name="iec" rules={[{ required: true,  }]}>
+                        <Input />
+                    </Form.Item>
+                </Col>
+                <Col xs={22} sm={22} md={12} lg={12}>
+                    <Form.Item label={<>{+countryId === 101?"GST Number":"Company Registration Number"}</>} name={+countryId === 101?"gst":"registration"} rules={[{ required: true,  }]}>
+                        <Input />
                     </Form.Item>
                 </Col>
                 <Col xs={22} sm={22} md={12} lg={12}>
