@@ -1,5 +1,6 @@
 import { Montserrat } from "next/font/google";
 import { strings } from "./strings";
+import { countryOption } from "./page/rfq/options";
 
 const assetsRootPath = "/"
 const errorMessage = (name:String,custom:number=0)=> custom? name :`${name} Requires`
@@ -118,10 +119,17 @@ export function processValues(obj:any, status:boolean, value1:any, value2:any, c
   return result;
 }
 
-export function isNumber(value:string|number):boolean {
-  
-  
+export function isNumber(value:string|number):boolean {  
   return Number.isFinite(+value);
+}
+
+export function getCountryId(name:string|number):string|number{  
+  let lookup = countryOption.filter(country => country.name === name)
+  if(lookup.length>0){
+    return lookup[0].id
+  }else{
+    return -1
+  }
 }
 export function camelCaseToSpaceSeparated(input:any):string {
   // Null check
@@ -135,3 +143,4 @@ export function camelCaseToSpaceSeparated(input:any):string {
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Handle acronyms
       .trim(); // Remove any leading or trailing spaces
 }
+

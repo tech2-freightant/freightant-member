@@ -60,6 +60,9 @@ interface UserValue {
 }
 
 async function fetchUserList(username: string): Promise<any> {  
+  if(username.length<3){
+    return [];
+  }
   return locode(username)
          .then(r=>{
             return r.data.map((i:any)=>({...i,key:(Math.random()*1000).toFixed(0),value:i.id,label:`${i.emoji} ${i.Country}${i.Location} - ${i.Name},${isNumber(i.Subdivision)?"":`[${i.Subdivision}],`} ${i.countryname}`,title:i}))

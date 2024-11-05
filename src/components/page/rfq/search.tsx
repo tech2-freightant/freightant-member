@@ -217,8 +217,9 @@ function RfqSearchUI() {
 
 export default RfqSearchUI
 
-export const RFQCard = ({ rfqData ,showSubmit}:{rfqData:any,showSubmit?:boolean}) => {
+export const RFQCard = ({ rfqData ,showSubmit,hideExpoter=false}:{rfqData:any,showSubmit?:boolean,hideExpoter?:boolean}) => {
   const [form] = Form.useForm();
+  
   const {
     _id,
     modeOfShipment,
@@ -241,10 +242,10 @@ export const RFQCard = ({ rfqData ,showSubmit}:{rfqData:any,showSubmit?:boolean}
     placeOfUnLoading
   } = rfqData;
 
-  const [isExpanded, setIsExpanded] = useState(false);
   useEffect(()=>{
     form.setFieldsValue(rfqData)
-  },[])
+  },[rfqData])
+  
   return (
     <Form
       form={form}
@@ -372,7 +373,7 @@ export const RFQCard = ({ rfqData ,showSubmit}:{rfqData:any,showSubmit?:boolean}
                     <Row gutter={[16, 16]} key={index} className='my-3'>
                       <Col {...lParams}>
                         <Form.Item label={!index?`Container`:null} layout="vertical">
-                          <Input value={i?.cargo?.category.join()} disabled className='text-center' />
+                          <Input value={(i?.cargo?.category?i?.cargo?.category:[]).join()} disabled className='text-center' />
                         </Form.Item>
                       </Col>
                       <Col {...lParams}>
@@ -488,47 +489,50 @@ export const RFQCard = ({ rfqData ,showSubmit}:{rfqData:any,showSubmit?:boolean}
                 <Input value={remarks} disabled className='text-center text-wrap' />
               </Form.Item>
             </Card>
-            <Card className='my-2'>
-              <Row gutter={[16,16]}>
-                <Col span={24}>
-                  <Space size={"large"} align="center">
-                    <h5 className="text-primary3">Exporter : <span className="border p-1 rounded">{organization?.companyName}</span></h5>
-                    <div className="pb-2">
-                      <Input value={organization?.businessType} disabled/>
+            {
+              !hideExpoter&&
+              <Card className='my-2'>
+                <Row gutter={[16,16]}>
+                  <Col span={24}>
+                    <Space size={"large"} align="center">
+                      <h5 className="text-primary3">Exporter : <span className="border p-1 rounded">{organization?.companyName}</span></h5>
+                      <div className="pb-2">
+                        <Input value={organization?.businessType} disabled/>
+                      </div>
+                    </Space>
+                  </Col>
+                  <Col span={24}>
+                    <div className='d-flex gap-2 align-items-center'>
+                      {organization?.starExportHouseRating&& <Rate disabled value={organization?.starExportHouseRating}/>}
+                      {organization?.exportPromotionOrganisationMembership&& 
+                        <>
+                        <Input value={"AEO"} disabled style={{width:"70px"}} className='text-center'/>
+                        <Input value={organization?.exportPromotionOrganisationMembership} disabled style={{width:"50%"}} className='text-center' />
+                        </>
+                      }
                     </div>
-                  </Space>
-                </Col>
-                <Col span={24}>
-                  <div className='d-flex gap-2 align-items-center'>
-                    {organization?.starExportHouseRating&& <Rate disabled value={organization?.starExportHouseRating}/>}
-                    {organization?.exportPromotionOrganisationMembership&& 
-                      <>
-                      <Input value={"AEO"} disabled style={{width:"70px"}} className='text-center'/>
-                      <Input value={organization?.exportPromotionOrganisationMembership} disabled style={{width:"50%"}} className='text-center' />
-                      </>
+                  </Col>
+                    {organization?.pointSalesPricingTeam&& 
+                    <>
+                    {
+                      (organization?.pointSalesPricingTeam?.name?organization.pointSalesPricingTeam?.name:[]).map((r:any,iIndex:number)=>(
+                      <Col span={24} key={iIndex}>
+                        <Space>
+                          {iIndex===0&& <p className="m-0">POC</p>}
+                          <Input value={organization?.pointSalesPricingTeam?.name?.[iIndex]} disabled className='text-center' />
+                          <Input value={organization?.pointSalesPricingTeam?.email?.[iIndex]} disabled className='text-center' />
+                          <Input value={organization?.pointSalesPricingTeam?.mobile?.[iIndex]} disabled className='text-center' />
+
+                        </Space>
+                      </Col>
+
+                      ))
                     }
-                  </div>
-                </Col>
-                  {organization?.pointSalesPricingTeam&& 
-                  <>
-                  {
-                    (organization?.pointSalesPricingTeam?.name?organization.pointSalesPricingTeam?.name:[]).map((r:any,iIndex:number)=>(
-                    <Col span={24} key={iIndex}>
-                      <Space>
-                        {iIndex===0&& <p className="m-0">POC</p>}
-                        <Input value={organization?.pointSalesPricingTeam?.name?.[iIndex]} disabled className='text-center' />
-                        <Input value={organization?.pointSalesPricingTeam?.email?.[iIndex]} disabled className='text-center' />
-                        <Input value={organization?.pointSalesPricingTeam?.mobile?.[iIndex]} disabled className='text-center' />
-
-                      </Space>
-                    </Col>
-
-                    ))
-                  }
-                  </>
-                  }
-              </Row>
-            </Card>
+                    </>
+                    }
+                </Row>
+              </Card>
+            }
             <Col span={24} className='my-2'>
               {!showSubmit&&<div className="d-flex justify-content-between mx-0">
                 <Button icon={<DownloadOutlined className="fw-bold fs-5 text-primary2"/>} >Download as pdf</Button>

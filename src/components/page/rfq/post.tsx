@@ -8,13 +8,14 @@ import { useForm, useWatch } from 'antd/es/form/Form'
 import LocodeSelect from '@/components/supportcomponents/customcomponents/locodeselect'
 import { CloseOutlined, DeleteFilled, EyeOutlined, PlusCircleFilled } from '@ant-design/icons'
 import { CustomFormUpload, CustomFormUploadV3 } from '../onboarduser/freightforwader'
-import { CBMCalculate, updateArray } from '@/components/utils'
+import { CBMCalculate, getCountryId, updateArray } from '@/components/utils'
 import { CitySelectV2, CitySelectV3, CountrySelect, StateSelectV3 } from '@/components/supportcomponents/customcomponents/stateselect'
 import dayjs from 'dayjs'
 import { ContextRFQ, RFQSideUI, initialStateRFQ, reducerRFQ } from './sideUI'
 import { postRfQ } from '@/network/endpoints'
 import PostSuccessModal from '@/components/supportcomponents/rfq/postSuccessModal'
 import { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC'
+import { RFQCard } from './search'
 
 
 function PostRfQ() {
@@ -61,12 +62,16 @@ const defaultValue = {
 const PostRFQUI = () => {
   const [formLoading, setformLoading] = useState(false)
   const [SuccessModal, setSuccessModal] = useState(false)
+
+  const [prviewModal, setPrviewModal] = useState(false)
+  const [formValue, setformValue] = useState({})
+
   const [Id, setId] = useState("")
   const { state, dispatch } = useContext(ContextRFQ)
   const [containerData, setContainerData] = useState<any>()
   const [form] = useForm()
-  const modeOfShipment = useWatch("modeOfShipment", form)
-  const tradeType = useWatch("tradeType", form)
+  const modeOfShipment = useWatch("modeOfShipment",{ form, preserve: true })
+  const tradeType = useWatch("tradeType",{ form, preserve: true })
   const incoterm = useWatch("incoterm", { form, preserve: true })
   const freeTimeLP = useWatch("freeTimeLP", { form, preserve: true })
   const freeTimeDP = useWatch("freeTimeDP", { form, preserve: true })
@@ -75,9 +80,9 @@ const PostRFQUI = () => {
   const addOnService = useWatch("addOnService", { form, preserve: true })
   const placeOfLoading = useWatch("placeOfLoading", { form, preserve: true })
   const placeOfUnLoading = useWatch("placeOfUnLoading", { form, preserve: true })
-  const cargoDetail = useWatch("cargoDetail", form)
-  const paymentTerms = useWatch("paymentTerms", form)
-  const dischargePort = useWatch("dischargePort", form)
+  const cargoDetail = useWatch("cargoDetail",{ form, preserve: true })
+  const paymentTerms = useWatch("paymentTerms",{ form, preserve: true })
+  const dischargePort = useWatch("dischargePort",{ form, preserve: true })
 
   const [countryID, setCountryID] = useState("")
   const [stateID, setStateID] = useState("")
@@ -166,6 +171,7 @@ const PostRFQUI = () => {
     o = form.getFieldsValue(["placeOfLoading", "placeOfUnLoading"])
     if (o.placeOfLoading !== undefined && o.placeOfUnLoading !== undefined) updateSteps(initialStateRFQ[3].title)
     if (tradeType) updateSteps(initialStateRFQ[1].title)
+    setformValue(i=>({...form.getFieldsValue()}))
   }, [
     modeOfShipment,
     tradeType,
@@ -211,12 +217,17 @@ const PostRFQUI = () => {
     }
   }
   useEffect(() => {
-    console.log(placeOfLoading);
+    setCountryID(`${getCountryId(placeOfLoading?.country)}`);
   }, [placeOfLoading])
-
+  useEffect(() => {
+    setCountryID(`${getCountryId(placeOfUnLoading?.country)}`);
+  }, [placeOfUnLoading])  
   useEffect(() => {
     form.setFieldsValue(defaultValue)
   }, [])
+  // useEffect(() => {
+  //   console.log(formValue);    
+  // }, [formValue])
   return (
     <>
       <Form
@@ -237,7 +248,7 @@ const PostRFQUI = () => {
                     }}>{e}</Button>
                   </Col>
                 ))}
-                <Form.Item rules={[{ required: true, message: "jh" }]} name={"modeOfShipment"} />
+                <Form.Item rules={[{ required: true, message: "Field Required" }]} name={"modeOfShipment"} />
               </Row>
             </Card>
           </Col>
@@ -302,7 +313,7 @@ const PostRFQUI = () => {
                               name={["placeOfLoading", "state"]}
                               onChange={(e: any) => setStateID(e)}
                               label=""
-                              countryId={countryID}
+                              countryId={`${getCountryId(placeOfLoading?.country)}`}
                               required={true}
 
                             />
@@ -337,8 +348,8 @@ const PostRFQUI = () => {
                           wholeValue={(e: any) => form.setFieldValue("loadingPortObj", e?.title)}
                           changeLocation={(country: string, state: string) => {
                             form.setFieldValue(["placeOfLoading", "country"], country)
-                            form.setFieldValue(["placeOfLoading", "state"], state)
-                            form.setFieldValue(["addOnService", "placeOfLoading", "country"], country)
+                            // form.setFieldValue(["placeOfLoading", "state"], state)
+                            form.setFieldValue(["addOnService", "placeOfLoading"], {country,state:"",city:""})
 
                           }}
                         />
@@ -369,7 +380,8 @@ const PostRFQUI = () => {
                           change={(e: any) => form.setFieldValue("dischargePort", e)}
                           wholeValue={(e: any) => form.setFieldValue("dischargePortObj", e?.title)}
                           changeLocation={(country: string, state: string) => {
-                            form.setFieldsValue({ placeOfUnLoading: { country, state } })
+                            form.setFieldsValue({ placeOfUnLoading: { country } })
+                            form.setFieldValue(["addOnService", "placeOfUnLoading"], {country,state:"",city:""})
                           }}
                         />
                       </Form.Item>
@@ -409,7 +421,7 @@ const PostRFQUI = () => {
                           <CountrySelect
                             f={form}
                             name={["placeOfUnLoading", "country"]}
-                            onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ placeOfUnLoading: { state: null, city: null, address: null } }) }}
+                            onChange={(e: any) => { setCountryID(i=>e); form.setFieldsValue({ placeOfUnLoading: { state: null, city: null, address: null } }) }}
                           />
                         </Col>
                         <Col {...layParams2}>
@@ -938,11 +950,11 @@ const PostRFQUI = () => {
                     </Form.Item>
                     {modeOfShipment !== strings.crossBorderTrucking &&
                       <>
-                        <Form.Item name={["addOnService", "eSeal"]} label="E Seal Facility" initialValue={false} className="my-2" layout="horizontal">
+                        <Form.Item name={["addOnService", "eSeal"]} label="E Seal Facility"  className="my-2" layout="horizontal">
                           <Checkbox checked={addOnService?.eSeal === true} onChange={() => form.setFieldValue(["addOnService", "eSeal"], true)}>Yes</Checkbox>
                           <Checkbox checked={addOnService?.eSeal === false} onChange={() => form.setFieldValue(["addOnService", "eSeal"], false)}>No</Checkbox>
                         </Form.Item>
-                        <Form.Item name={["addOnService", "stuffingLocationType"]} label="Stuffing Location Type" initialValue={false} style={{ width: "100%" }} layout="horizontal">
+                        <Form.Item name={["addOnService", "stuffingLocationType"]} label="Stuffing Location Type"  style={{ width: "100%" }} layout="horizontal">
                           <Space>
                             {stuffingLocationTypeOptions.map((e: string, iIndex) => (<Button key={iIndex + "cBSt"} block shape="round" style={{ margin: 2, lineHeight: 1, fontSize: "12px" }} type={addOnService?.stuffingLocationType === e ? "primary" : "default"} onClick={() => { form.setFieldValue(["addOnService", "stuffingLocationType"], e) }}>{e}</Button>))}
                           </Space>
@@ -967,7 +979,7 @@ const PostRFQUI = () => {
                               name={["addOnService", "placeOfLoading", "state"]}
                               onChange={(e: any) => setStateID(e)}
                               label=""
-                              countryId={countryID}
+                              countryId={`${getCountryId(addOnService?.placeOfLoading?.country)}`}
                             />
                           </Col>
                           <Col {...layParams2}>
@@ -1023,7 +1035,7 @@ const PostRFQUI = () => {
                         </Form.Item>
                       </>
                     }
-                    <Form.Item name={["addOnService", "insuranceRequired"]} label="Insurance Required" initialValue={false} className="mb-4" layout={modeOfShipment === strings.crossBorderTrucking ? `vertical` : `horizontal`}>
+                    <Form.Item name={["addOnService", "insuranceRequired"]} label="Insurance Required"  className="mb-4" layout={modeOfShipment === strings.crossBorderTrucking ? `vertical` : `horizontal`}>
                       <Checkbox checked={addOnService?.insuranceRequired === true} onChange={() => form.setFieldValue(["addOnService", "insuranceRequired"], true)}>Yes</Checkbox>
                       <Checkbox checked={addOnService?.insuranceRequired === false} onChange={() => form.setFieldValue(["addOnService", "insuranceRequired"], false)}>No</Checkbox>
                     </Form.Item>
@@ -1097,11 +1109,11 @@ const PostRFQUI = () => {
                     </Form.Item>
                     {modeOfShipment !== strings.crossBorderTrucking &&
                       <>
-                        <Form.Item name={["addOnService", "eSeal"]} label="DPD Facility [ Direct Port Delivery ]" initialValue={false}>
+                        <Form.Item name={["addOnService", "eSeal"]} label="DPD Facility [ Direct Port Delivery ]">
                           <Checkbox checked={addOnService?.eSeal === true} onChange={() => form.setFieldValue(["addOnService", "eSeal"], true)}>Yes</Checkbox>
                           <Checkbox checked={addOnService?.eSeal === false} onChange={() => form.setFieldValue(["addOnService", "eSeal"], false)}>No</Checkbox>
                         </Form.Item>
-                        <Form.Item name={["addOnService", "stuffingLocationType"]} label="De Stuffing Location Type" initialValue={false} style={{ width: "100%" }}>
+                        <Form.Item name={["addOnService", "stuffingLocationType"]} label="De Stuffing Location Type" style={{ width: "100%" }}>
                           {destuffingLocationTypeOptions.map((e: string, iIndex) => (<Button key={iIndex + "cbt"} block shape="round" style={{ margin: 2, lineHeight: 1, fontSize: "12px" }} type={addOnService?.stuffingLocationType === e ? "primary" : "default"} onClick={() => { form.setFieldValue(["addOnService", "stuffingLocationType"], e) }}>{e}</Button>))}
                         </Form.Item>
                       </>
@@ -1109,19 +1121,19 @@ const PostRFQUI = () => {
                     {modeOfShipment !== strings.crossBorderTrucking &&
                       <>
                         <p className='mt-3'> Place of Unloading , Destination Factory / warehouse address</p>
-                        <Form.Item name={["addOnService", "placeOfLoading"]} noStyle />
+                        <Form.Item name={["addOnService", "placeOfUnLoading"]} noStyle />
                         <Row gutter={[8, 0]} style={{ width: "100%" }}>
                           <Col {...layParams2}>
                             <CountrySelect
                               f={form}
-                              name={["addOnService", "placeOfLoading", "country"]}
-                              onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ addOnService: { placeOfLoading: { state: null, city: null, address: null } } }) }}
+                              name={["addOnService", "placeOfUnLoading", "country"]}
+                              onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ addOnService: { placeOfUnLoading: { state: null, city: null, address: null } } }) }}
                             />
                           </Col>
                           <Col {...layParams2}>
                             <StateSelectV3
                               f={form}
-                              name={["addOnService", "placeOfLoading", "state"]}
+                              name={["addOnService", "placeOfUnLoading", "state"]}
                               onChange={(e: any) => setStateID(e)}
                               label=""
                               countryId={countryID}
@@ -1130,14 +1142,14 @@ const PostRFQUI = () => {
                           <Col {...layParams2}>
                             <CitySelectV3
                               f={() => { }}
-                              name={["addOnService", "placeOfLoading", "city"]}
-                              onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfLoading", "city"], e)}
+                              name={["addOnService", "placeOfUnLoading", "city"]}
+                              onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfUnLoading", "city"], e)}
                               label=""
                               stateId={stateID}
                             />
                           </Col>
                           <Col span={24}>
-                            <Form.Item name={["addOnService", "placeOfLoading", "address"]}>
+                            <Form.Item name={["addOnService", "placeOfUnLoading", "address"]}>
                               <Input.TextArea
                                 placeholder="Full Address"
                               />
@@ -1179,7 +1191,7 @@ const PostRFQUI = () => {
                         </Form.Item>
                       </>
                     }
-                    <Form.Item name={["addOnService", "insuranceRequired"]} label="Insurance Required" initialValue={false} className="mb-4" layout={modeOfShipment === strings.crossBorderTrucking ? `vertical` : `horizontal`}>
+                    <Form.Item name={["addOnService", "insuranceRequired"]} label="Insurance Required" className="mb-4" layout={modeOfShipment === strings.crossBorderTrucking ? `vertical` : `horizontal`}>
                       <Checkbox checked={addOnService?.insuranceRequired === true} onChange={() => form.setFieldValue(["addOnService", "insuranceRequired"], true)}>Yes</Checkbox>
                       <Checkbox checked={addOnService?.insuranceRequired === false} onChange={() => form.setFieldValue(["addOnService", "insuranceRequired"], false)}>No</Checkbox>
                     </Form.Item>
@@ -1274,7 +1286,7 @@ const PostRFQUI = () => {
           </Col>
           <Col span={24}>
             <div className="col-11 col-md-9 col-lg-7 col-xl-6 mx-auto d-flex justify-content-center">
-              <Typography.Link>Preview RFQ <EyeOutlined /></Typography.Link>
+              <Typography.Link onClick={()=>setPrviewModal(i=>!i)}>Preview RFQ <EyeOutlined /></Typography.Link>
             </div>
           </Col>
           <Col span={24}>
@@ -1285,6 +1297,9 @@ const PostRFQUI = () => {
 
         </Row>
       </Form>
+      <Modal open={prviewModal} footer={null} width={950} onCancel={()=>setPrviewModal(i=>!i)} onClose={()=>setPrviewModal(i=>!i)}>
+        <RFQCard hideExpoter showSubmit rfqData={formValue} />
+      </Modal>
       <Modal open={SuccessModal} footer={null} closable={false}>
         <PostSuccessModal id={Id} />
       </Modal>
