@@ -980,6 +980,7 @@ const PostRFQUI = () => {
                               onChange={(e: any) => setStateID(e)}
                               label=""
                               countryId={`${getCountryId(addOnService?.placeOfLoading?.country)}`}
+                              required={(addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking)}
                             />
                           </Col>
                           <Col {...layParams2}>
@@ -989,10 +990,11 @@ const PostRFQUI = () => {
                               onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfLoading", "city"], e)}
                               label=""
                               stateId={stateID}
+                              required={(addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking)}
                             />
                           </Col>
                           <Col span={24}>
-                            <Form.Item name={["addOnService", "placeOfLoading", "address"]}>
+                            <Form.Item name={["addOnService", "placeOfLoading", "address"]} rules={[{ required: (addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking) }]}>
                               <Input.TextArea
                                 placeholder="Full Address"
                               />

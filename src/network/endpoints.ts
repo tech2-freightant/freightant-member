@@ -101,7 +101,7 @@ export async function getCountryFromName(countryname?: string){
   }
 export async function getStates(countryId?: string){
     try {
-      const response = await axios(`/api/location/state?${countryId}`); // Replace with your endpoint for states by country ID
+      const response = await axios(`/api/location/state/${countryId}`); // Replace with your endpoint for states by country ID
       return { data: response.data.data, code: true, message: "" };
     } catch (error: any) {
       return { message: error.response?.data?.message || "Error fetching states", code: false, data: null };
@@ -118,7 +118,7 @@ export async function getStatesFromCountry(countryname?: string){
   
 export async function getCity(stateId?: string){
     try {
-      const response = await axios(`/api/location/city?${stateId}`); // Replace with your endpoint for cities by state ID
+      const response = await axios(`/api/location/city/${stateId}`); // Replace with your endpoint for cities by state ID
       return { data: response.data.data, code: true, message: "" };
     } catch (error: any) {
       return { message: error.response?.data?.message || "Error fetching cities", code: false, data: null };
