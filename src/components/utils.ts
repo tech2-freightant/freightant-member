@@ -126,8 +126,11 @@ export function isNumber(value:string|number):boolean {
 export function getCountryId(name:string|number):string|number{  
   let lookup = countryOption.filter(country => country.name === name)
   if(lookup.length>0){
+    console.log(lookup[0].id);
+    
     return lookup[0].id
   }else{
+    console.log("Country not found");
     return -1
   }
 }

@@ -1,7 +1,7 @@
 "use client"
 import React, { useContext, useEffect, useReducer, useState } from 'react'
 import OnboardUserUI, { RFQUserUI } from '../onboarduser/layout'
-import { Button, Card, Cascader, Checkbox, Col, DatePicker, Dropdown, Form, Input, Modal, Radio, Row, Select, Space, Switch, Typography, message } from 'antd'
+import { Button, Card, Cascader, Checkbox, Col, ConfigProvider, DatePicker, Dropdown, Form, Input, Modal, Radio, Row, Select, Space, Switch, Typography, message } from 'antd'
 import { strings } from '@/components/strings'
 import { DimsOptions, WeightOptions, cargoCategoryOptions, crossBorderTruckCargoOptions, destuffingLocationTypeOptions, gaugestatusOptions, imoClassOptions, importIncotermOptions, incotermOptions, miscServices, modeOfShipmentOptions, packageTypeOptions, paymentTermOptions, reeferCargoOptions, reeferContainersOptions, specialCargoOptions, specialContainersOptions, standardCargoOptions, standardContainersOptions, stuffingLocationTypeOptions, tradeTypeOptions, truckTrailerType } from './options'
 import { useForm, useWatch } from 'antd/es/form/Form'
@@ -190,7 +190,10 @@ const PostRFQUI = () => {
     let a = [...(addOnService?.truckType ? addOnService?.truckType : [])]
     form.setFieldValue(["addOnService", "truckType"], [...a, ...[{ typee: e, quantity: 1 }]])
   }
-  const onFinished = (formValues: any) => {
+  const onFinished = () => {
+    console.log("ca");
+    
+    let formValues = form.getFieldsValue()
     setformLoading(true)
     let e = { ...formValues }
     console.log(e);
@@ -235,6 +238,7 @@ const PostRFQUI = () => {
         onFinish={onFinished}
         onFinishFailed={FinishFailed}
         layout='vertical'
+        
       >
         <Row gutter={[16, 16]} justify="space-around">
           <Col span={24}>
@@ -311,7 +315,10 @@ const PostRFQUI = () => {
                             <StateSelectV3
                               f={form}
                               name={["placeOfLoading", "state"]}
-                              onChange={(e: any) => setStateID(e)}
+                              onChange={(e: any) =>{
+                                 setStateID(e)
+                                 form.setFieldValue(["placeOfLoading", "city"],null)
+                                }}
                               label=""
                               countryId={`${getCountryId(placeOfLoading?.country)}`}
                               required={true}
@@ -349,7 +356,7 @@ const PostRFQUI = () => {
                           changeLocation={(country: string, state: string) => {
                             form.setFieldValue(["placeOfLoading", "country"], country)
                             // form.setFieldValue(["placeOfLoading", "state"], state)
-                            form.setFieldValue(["addOnService", "placeOfLoading"], {country,state:"",city:""})
+                            form.setFieldValue(["addOnService", "placeOfLoading"], {country,state:null,city:null})
 
                           }}
                         />
@@ -365,7 +372,7 @@ const PostRFQUI = () => {
                               <Button onClick={() => form.setFieldValue("freeTimeLP", +freeTimeLP - 1 < 1 ? 1 : +freeTimeLP - 1)} size="small" type="primary">-</Button>
                               <span className="mx-3" style={{ textWrap: "nowrap" }}>
                                 <Form.Item name={"freeTimeLP"} noStyle>
-                                  <Input type="number" className="border-0" style={{ display: "contents" }} />
+                                  <Input  type="number" className="border-0" style={{ display: "contents" }} />
                                 </Form.Item>
                                 {freeTimeLP} days
                               </span>
@@ -585,7 +592,7 @@ const PostRFQUI = () => {
                   </Col>
                   <Col {...layParams}>
                     <Form.Item rules={[{ required: true }]} name={["cargoDetail", "weight"]} label="Total Weight" layout="vertical">
-                      <Input />
+                      <Input  />
                     </Form.Item>
                   </Col>
 
@@ -963,44 +970,48 @@ const PostRFQUI = () => {
                     }
                     {modeOfShipment !== strings.crossBorderTrucking &&
                       <>
-                        <p className='mt-3'> Place of Loading , Origin Factory / warehouse address</p>
-                        <Form.Item name={["addOnService", "placeOfLoading"]} noStyle />
-                        <Row gutter={[8, 0]} style={{ width: "100%" }}>
-                          <Col {...layParams2}>
-                            <CountrySelect
-                              f={form}
-                              name={["addOnService", "placeOfLoading", "country"]}
-                              onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ addOnService: { placeOfLoading: { state: null, city: null, address: null } } }) }}
-                            />
-                          </Col>
-                          <Col {...layParams2}>
-                            <StateSelectV3
-                              f={form}
-                              name={["addOnService", "placeOfLoading", "state"]}
-                              onChange={(e: any) => setStateID(e)}
-                              label=""
-                              countryId={`${getCountryId(addOnService?.placeOfLoading?.country)}`}
-                              required={(addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking)}
-                            />
-                          </Col>
-                          <Col {...layParams2}>
-                            <CitySelectV3
-                              f={() => { }}
-                              name={["addOnService", "placeOfLoading", "city"]}
-                              onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfLoading", "city"], e)}
-                              label=""
-                              stateId={stateID}
-                              required={(addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking)}
-                            />
-                          </Col>
-                          <Col span={24}>
-                            <Form.Item name={["addOnService", "placeOfLoading", "address"]} rules={[{ required: (addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking) }]}>
-                              <Input.TextArea
-                                placeholder="Full Address"
+                        
+                        <Form.Item label={((addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking)?"*":"")+"Place of Loading , Origin Factory / warehouse address"} rules={[{ required: (addOnService?.services?addOnService?.services:[]).includes(strings.doorToPortTrucking) }]}>
+                          <Row gutter={[8, 0]} style={{ width: "100%" }}>
+                            <Col {...layParams2}>
+                              <CountrySelect
+                                f={form}
+                                name={["addOnService", "placeOfLoading", "country"]}
+                                onChange={(e: any) => { setCountryID(e); form.setFieldsValue({ addOnService: { placeOfLoading: { state: null, city: null, address: null } } }) }}
                               />
-                            </Form.Item>
-                          </Col>
-                        </Row>
+                            </Col>
+                            <Col {...layParams2}>
+                              <StateSelectV3
+                                f={form}
+                                name={["addOnService", "placeOfLoading", "state"]}
+                                onChange={(e: any) =>{
+                                   setStateID(e)
+                                   form.setFieldValue(["addOnService", "placeOfLoading", "city"],null)
+                                  }}
+                                label=""
+                                countryId={`${getCountryId(addOnService?.placeOfLoading?.country)}`}
+                                required={(addOnService?.services ? addOnService?.services : []).includes(strings.doorToPortTrucking)}
+                              />
+                            </Col>
+                            <Col {...layParams2}>
+                              <CitySelectV3
+                                f={() => { }}
+                                name={["addOnService", "placeOfLoading", "city"]}
+                                onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfLoading", "city"], e)}
+                                label=""
+                                stateId={stateID}
+                                required={(addOnService?.services ? addOnService?.services : []).includes(strings.doorToPortTrucking)}
+                              />
+                            </Col>
+                            <Col span={24}>
+                              <Form.Item name={["addOnService", "placeOfLoading", "address"]} rules={[{ required: (addOnService?.services ? addOnService?.services : []).includes(strings.doorToPortTrucking) }]}>
+                                <Input.TextArea
+                                  placeholder="Full Address"
+                                />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                        </Form.Item>
                       </>
                     }
                     {
@@ -1136,7 +1147,9 @@ const PostRFQUI = () => {
                             <StateSelectV3
                               f={form}
                               name={["addOnService", "placeOfUnLoading", "state"]}
-                              onChange={(e: any) => setStateID(e)}
+                              onChange={(e: any) => {
+                                form.setFieldValue(["addOnService", "placeOfUnLoading", "city"],null)
+                                setStateID(e)}}
                               label=""
                               countryId={countryID}
                             />
@@ -1293,14 +1306,51 @@ const PostRFQUI = () => {
           </Col>
           <Col span={24}>
             <div className="col-11 col-md-9 col-lg-7 col-xl-6 mx-auto">
-              <Button type="primary" htmlType="submit" block size="large" loading={formLoading} shape="round">Submit</Button>
+              <Button type="primary" onClick={()=>form.submit()} block size="large" loading={formLoading} shape="round">Submit</Button>
             </div>
           </Col>
 
         </Row>
       </Form>
       <Modal open={prviewModal} footer={null} width={950} onCancel={()=>setPrviewModal(i=>!i)} onClose={()=>setPrviewModal(i=>!i)}>
+      <ConfigProvider
+          theme={{
+            "components": {
+              "Select": {
+                "multipleItemBg": "#F3F6FF",
+                multipleItemHeight: 32,
+                "colorText": "#6A37F4",
+                multipleItemBorderColor: "#6937f46c"
+              },
+              "Input": {
+                colorBgContainerDisabled: "rgb(243,246,255)",
+                colorTextDisabled: "rgba(69, 17, 151, 1)",
+                "colorBorder": "rgb(243,246,255)",
+                borderRadius:48,
+              },
+              "Collapse": {
+                "headerBg": "rgba(255,255,255,0.02)",
+                padding:0,
+                contentPadding:0,
+              },
+              "Form": {
+                "labelColor": "rgb(10,0,73)"
+              },
+              "Card":{
+                colorTextHeading:"rgba(69, 17, 151, 1)",
+              },
+              Table:{
+                colorTextHeading:"rgba(69, 17, 151, 1)",
+                headerBg: "rgb(243,246,255)",
+                padding:10,
+                fontSize:13,
+                borderColor:"#A89CF7",
+              }
+            }
+          }}
+        >
         <RFQCard hideExpoter showSubmit rfqData={formValue} />
+        </ConfigProvider>
       </Modal>
       <Modal open={SuccessModal} footer={null} closable={false}>
         <PostSuccessModal id={Id} />

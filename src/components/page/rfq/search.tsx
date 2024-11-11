@@ -1,5 +1,5 @@
 "use client"
-import { Button, Card, Col, Collapse, ConfigProvider, Form, Input, Rate, Row, Select, Space, Table } from 'antd'
+import { Button, Card, Col, Collapse, ConfigProvider, Form, Input, Rate, Row, Select, Space, Table, Typography } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { importIncotermOptions, incotermOptions, modeOfShipmentOptions, tradeTypeOptions } from './options';
 import { strings } from '@/components/strings';
@@ -17,23 +17,73 @@ import Link from 'next/link';
 function RfqSearchUI() {
   const [form] = Form.useForm()
   const [FormLoading, setFormLoading] = useState(false)
+  const [emptyResult, setemptyResult] = useState(false)
 
   const [SrcLocation, setSrcLocation] = useState("")
   const [DesLocation, setDesLocation] = useState("")
+  const [universal, setUniversal] = useState<any>(null)
   const modeOfShipment = useWatch("modeOfShipment",form)
   const tradeType = useWatch("tradeType",form)
   const incoterm = useWatch("incoterm",{form,preserve:true})
   const freeTimeLP = useWatch("freeTimeLP",{form,preserve:true})
 
   const [RfqList, setRfqList] = useState([])
+  const [UniversalRfqList, setUniversalRfqList] = useState([])
   const handleSubmit = (values:any) => {
+    if(universal){      
+      let localRfqList = UniversalRfqList.filter((item:any)=>{
+        console.log(item?.tradeType == values?.tradeType);
+          if(values?.origin?.country){
+            if(values?.origin?.country==`Any` ){
+              return true
+            }
+           return `${item?.placeOfLoading?.country}`.toLowerCase() == `${values?.origin?.country}`.toLowerCase()
+          }
+          if(values?.origin?.state){
+            return `${item?.placeOfLoading?.state}`.toLowerCase() == `${values?.origin?.state}`.toLowerCase()
+          }
+          if(values?.destination?.country){
+            if(values?.destination?.country==`Any` ){
+              return true
+            }
+            return `${item?.placeOfUnLoading?.country}`.toLowerCase() == `${values?.destination?.country}`.toLowerCase()            
+          }
+          if(values?.destination?.state){
+            return `${item?.placeOfUnLoading?.state}`.toLowerCase() == `${values?.destination?.state}`.toLowerCase()            
+          }
+          if(values?.modeOfShipment){
+            return item?.modeOfShipment == values?.modeOfShipment
+          }
+          if(values?.incoterm){
+            return item?.incoterm == values?.incoterm
+          }  
+          if(values?.tradeType){
+            return item?.tradeType == values?.tradeType
+          }  
+          if(values?.portOfLoading){
+            
+            return values.portOfLoading.includes(item?.loadingPort)
+          }  
+          if(values?.portOfUnLoading){
+            return values.portOfUnLoading.includes(item?.dischargePort)
+          }  
+          return true
+        })
+        setemptyResult(false)
+        if(localRfqList.length<1){
+          setemptyResult(true)
+        }
+        setRfqList(localRfqList)
+      return
+    }
     setFormLoading(true)
     getRfQ(values)
     .then(r=>{
       if(r.code){
         setRfqList(r.data)
-      }
-      
+        setUniversalRfqList(r.data)
+        setemptyResult(r.data.length<1)
+      }      
     })
     .catch(r=>{
       console.log(r);
@@ -43,11 +93,34 @@ function RfqSearchUI() {
       setFormLoading(false);
     })
   };
+
+  useEffect(() => {
+
+    const timer = setTimeout(() => {
+      if(universal){
+        setFormLoading(true)
+        form.resetFields()
+        getRfQ({ universal, only: true })
+          .then(r => {
+            if (r.code) {
+              setRfqList(r.data)
+              setUniversalRfqList(r.data)
+              setemptyResult(r.data.length < 1)
+            }
+          })
+          .catch(r => {
+          }).finally(() => {
+            setFormLoading(false);
+          });
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [universal]); 
   return (
     <div className={`bg-shade min-vh-100`} >
       <Row justify={"center"} gutter={[8,8]} className='mx-0 py-5'>
         <Col sm={23} md={20} lg={18} xxl={15} className="px-5 my-2">
-          <Input placeholder="Search Input" variant="filled" size="large" prefix={<SearchOutlined />} />
+          <Input onChange={e=>setUniversal(e.target.value)} placeholder="Search Input" variant="filled" size="large" prefix={<SearchOutlined />} />
         </Col>
         <Col sm={23} md={20} lg={18} xxl={15}>
           <Card className="border-primary2">
@@ -89,6 +162,7 @@ function RfqSearchUI() {
                   <Form.Item  name={["origin","country"]} label={<h6 className="m-0 text-primary2">Origin Country</h6>}>
                     <CountrySelectV2
                       {...{className:"border rounded-pill",variant:"borderless"}}
+                      all={true}
                       onChange={(e:any)=>{
                         setSrcLocation(e.id)
                         form.setFieldsValue({origin:{country:e.name,state:[]}})
@@ -109,6 +183,7 @@ function RfqSearchUI() {
                   <Form.Item  name={["destination","country"]} label={<h6 className="m-0 text-primary2">Dest. Country</h6>}>
                     <CountrySelectV2
                     {...{className:"border rounded-pill",variant:"borderless"}}
+                    all={true}
                       onChange={(e:any)=>{
                         setDesLocation(e.id)
                         form.setFieldsValue({destination:{country:e.name,state:[]}})
@@ -210,6 +285,18 @@ function RfqSearchUI() {
             </Col>
           )}
         </ConfigProvider>
+        {
+          emptyResult && 
+          <Col sm={23} md={20} lg={18} xxl={15} >
+            <Row justify="center" className="py-5">
+              <Col sm={23} md={20} lg={18} xxl={15} className='p-3' style={{border:"1px dashed #6A37F4"}}>
+                <p className='text-center m-0 p-0'>
+                  No RFQ to show with the applied filters.
+                </p>
+              </Col>
+            </Row>
+          </Col>
+        }
       </Row>
     </div>
   )
@@ -248,7 +335,7 @@ export const RFQCard = ({ rfqData ,showSubmit,hideExpoter=false}:{rfqData:any,sh
   
   return (
     <Form
-      form={form}
+      form={form} 
     >
       <Card title={`RFQ ID: ${"rfqId"}`} styles={{header:{borderBottomWidth:0}}}>
         <Row gutter={[16, 8]} className='my-3'>

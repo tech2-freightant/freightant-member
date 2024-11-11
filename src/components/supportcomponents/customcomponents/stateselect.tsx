@@ -32,12 +32,16 @@ export const CountrySelect = ({ name, onChange, f ,required=false,...props}:{req
     </Form.Item>
   );
 };
-export const CountrySelectV2 = ({onChange,...props}:{props?:any,onChange:any}) => {
+export const CountrySelectV2 = ({onChange,all=false,...props}:{all?:boolean,props?:any,onChange:any}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
   const { data, error } = useSWR( "/",getCountry,{dedupingInterval:5000*60});
 
   useEffect(() => {
     if (data && data.data) {
+      if(all){
+        setStates([...[{name: "Any",id: "All"}],...data.data])
+        return
+      }
       setStates(data.data);
     }
     
@@ -167,7 +171,6 @@ export const CitySelect = ({ name, label, stateId, onChange,f ,...props}:{props?
 
   const handleChange = (value:any) => {
     f.setFieldValue(name, value)
-           
   };
 
   return (
