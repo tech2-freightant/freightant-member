@@ -478,8 +478,11 @@ export const CustomFormUpload = ({ f, name, label, style = false, maxCount = 1, 
             if(typeof vexist === 'string'){
                 setFileList([{name:vexist}])
             }else{
-                if(vexist?.fileList){
+                if((vexist?.fileList?vexist?.fileList:[]).length>0){
                     setFileList([{...vexist.fileList[0],name:vexist?.file.name}])
+                }else{
+                    setFileList([])
+                    f.setFieldValue(style ? name : [name, "file"], undefined)
                 }
             }
         }   

@@ -30,46 +30,72 @@ function RfqSearchUI() {
   const [RfqList, setRfqList] = useState([])
   const [UniversalRfqList, setUniversalRfqList] = useState([])
   const handleSubmit = (values:any) => {
-    if(universal){      
-      let localRfqList = UniversalRfqList.filter((item:any)=>{
-        console.log(item?.tradeType == values?.tradeType);
-          if(values?.origin?.country){
-            if(values?.origin?.country==`Any` ){
-              return true
-            }
-           return `${item?.placeOfLoading?.country}`.toLowerCase() == `${values?.origin?.country}`.toLowerCase()
+    if (universal) {      
+      
+
+      let localRfqList = UniversalRfqList;
+
+      if (values?.origin?.country) {
+        localRfqList = localRfqList.filter((item: any) => {
+          if (values?.origin?.country === 'Any') {
+            return true;  // Allow any match for 'Any'
+          }          
+          return `${item?.placeOfLoading?.country}`.toLowerCase() === `${values?.origin?.country}`.toLowerCase();
+        });
+      }
+      
+      if (values?.origin?.state && (values?.origin?.state?values?.origin?.state:[]).length>0) {        
+        localRfqList = localRfqList.filter((item: any) => {
+          return `${item?.placeOfLoading?.state}`.toLowerCase() === `${values?.origin?.state}`.toLowerCase();
+        });
+      }
+      
+      if (values?.destination?.country) {        
+        localRfqList = localRfqList.filter((item: any) => {
+          if (values?.destination?.country === 'Any') {
+            return true;  // Allow any match for 'Any'
           }
-          if(values?.origin?.state){
-            return `${item?.placeOfLoading?.state}`.toLowerCase() == `${values?.origin?.state}`.toLowerCase()
-          }
-          if(values?.destination?.country){
-            if(values?.destination?.country==`Any` ){
-              return true
-            }
-            return `${item?.placeOfUnLoading?.country}`.toLowerCase() == `${values?.destination?.country}`.toLowerCase()            
-          }
-          if(values?.destination?.state){
-            return `${item?.placeOfUnLoading?.state}`.toLowerCase() == `${values?.destination?.state}`.toLowerCase()            
-          }
-          if(values?.modeOfShipment){
-            return item?.modeOfShipment == values?.modeOfShipment
-          }
-          if(values?.incoterm){
-            return item?.incoterm == values?.incoterm
-          }  
-          if(values?.tradeType){
-            return item?.tradeType == values?.tradeType
-          }  
-          if(values?.portOfLoading){
-            
-            return values.portOfLoading.includes(item?.loadingPort)
-          }  
-          if(values?.portOfUnLoading){
-            return values.portOfUnLoading.includes(item?.dischargePort)
-          }  
-          return true
-        })
-        setemptyResult(false)
+          return `${item?.placeOfUnLoading?.country}`.toLowerCase() === `${values?.destination?.country}`.toLowerCase();
+        });
+      }
+      
+      if (values?.destination?.state && (values?.destination?.state?values?.destination?.state:[]).length>0) {        
+        localRfqList = localRfqList.filter((item: any) => {
+          return `${item?.placeOfUnLoading?.state}`.toLowerCase() === `${values?.destination?.state}`.toLowerCase();
+        });
+      }
+      
+      if (values?.modeOfShipment) {        
+        localRfqList = localRfqList.filter((item: any) => {
+          return item?.modeOfShipment === values?.modeOfShipment;
+        });
+      }
+      
+      if (values?.incoterm) {        
+        localRfqList = localRfqList.filter((item: any) => {
+          return item?.incoterm === values?.incoterm;
+        });
+      }
+      
+      if (values?.tradeType) {        
+        localRfqList = localRfqList.filter((item: any) => {
+          return item?.tradeType === values?.tradeType;
+        });
+      }
+
+      if (values?.portOfLoading&&(values?.portOfLoading?values?.portOfLoading:[]).length>0) {
+        localRfqList = localRfqList.filter((item: any) => {
+          return values.portOfLoading.includes(item?.loadingPort);
+        });
+      }
+
+      if (values?.portOfUnLoading&&(values?.portOfUnLoading?values?.portOfUnLoading:[]).length>0) {
+        localRfqList = localRfqList.filter((item: any) => {
+          return values.portOfUnLoading.includes(item?.dischargePort);
+        });
+      }
+        setemptyResult(false)        
+        
         if(localRfqList.length<1){
           setemptyResult(true)
         }
@@ -133,7 +159,7 @@ function RfqSearchUI() {
             >
               <Row gutter={[16,8]}>
                 <Col span={24}>
-                  <Form.Item name={"modeOfShipment"} rules={[{required:true}]} label={<h6 className="text-primary2">Mode of Shipment</h6>}>
+                  <Form.Item name={"modeOfShipment"} label={<h6 className="text-primary2">Mode of Shipment</h6>}>
                     <Row gutter={[16, 16]}>
                       {modeOfShipmentOptions.map((e: string) => (
                         <Col {...layParams3} key={e}>
@@ -147,7 +173,7 @@ function RfqSearchUI() {
                   </Form.Item>
                 </Col>
                 <Col span={24}>
-                  <Form.Item name={"tradeType"} rules={[{required:true}]} label={<h6 className="text-primary2 m-0">Trade Type</h6>} layout="horizontal">
+                  <Form.Item name={"tradeType"} label={<h6 className="text-primary2 m-0">Trade Type</h6>} layout="horizontal">
                     <Row gutter={[16, 16]}>
                       {tradeTypeOptions.map((e: string) => (<Col key={e} {...layParams3}><Button size="large" block shape="round" style={{ textWrap: "wrap", lineHeight: 1 }} type={tradeType === e ? "primary" : "default"} onClick={() => {
                         form.setFieldValue("tradeType", e)

@@ -21,10 +21,13 @@ const SignInUI = () => {
                 router.replace("/")
             }else{
                 message.error(r?.error)
+                // if("User does not exist"== r?.error){
+                //     router.push("/auth/signup")
+                // }
             }
         }).catch((err)=> {
             console.log("err ", err.message);            
-        }).catch(()=>{setformLoading(false)});
+        }).finally(()=>{setformLoading(false)});
     }
     return (
         <motion.div
@@ -39,7 +42,12 @@ const SignInUI = () => {
                 <div className="freightant-login">
                     <h3 className="text-center">Login</h3>
                     <Form layout="vertical" onFinish={handleFinish}>
-                        <Form.Item label="Business email" name={"email"}>
+                        <Form.Item label="Business email" name={"email"}
+                            rules={[
+                                {type:"email",message:"Please enter a valid email address"},
+                                {required:true},
+                            ]}
+                        >
                             <Input placeholder="Enter your business email" />
                         </Form.Item>
                         <Form.Item label="Password" name={"password"}>

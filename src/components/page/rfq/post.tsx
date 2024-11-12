@@ -331,7 +331,7 @@ const PostRFQUI = () => {
                               name={["placeOfLoading", "city"]}
                               onChange={(e: any) => form.setFieldValue(["placeOfLoading", "city"], e)}
                               label=""
-                              stateId={stateID}
+                              stateId={placeOfLoading?.state}
                             />
                           </Col>
                           <Col span={24}>
@@ -446,7 +446,7 @@ const PostRFQUI = () => {
                             name={["placeOfUnLoading", "city"]}
                             onChange={(e: any) => form.setFieldValue(["placeOfUnLoading", "city"], e)}
                             label=""
-                            stateId={stateID}
+                            stateId={placeOfLoading?.state}
                           />
                         </Col>
                         <Col span={24}>
@@ -999,7 +999,7 @@ const PostRFQUI = () => {
                                 name={["addOnService", "placeOfLoading", "city"]}
                                 onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfLoading", "city"], e)}
                                 label=""
-                                stateId={stateID}
+                                stateId={addOnService?.placeOfLoading?.state}
                                 required={(addOnService?.services ? addOnService?.services : []).includes(strings.doorToPortTrucking)}
                               />
                             </Col>
@@ -1160,7 +1160,7 @@ const PostRFQUI = () => {
                               name={["addOnService", "placeOfUnLoading", "city"]}
                               onChange={(e: any) => form.setFieldValue(["addOnService", "placeOfUnLoading", "city"], e)}
                               label=""
-                              stateId={stateID}
+                              stateId={addOnService?.placeOfUnLoading?.state}
                             />
                           </Col>
                           <Col span={24}>

@@ -6,10 +6,8 @@ export async function GET() {
       const query = 'SELECT `id`,`name`,`iso3`,`phonecode`,`currency`,`currency_symbol`,`emoji` FROM countries';
       let res 
       if(process.env.ENV){
-        console.log(process.env.ENV);
         res = await sql`SELECT id,name,iso3,phonecode,currency,currency_symbol,emoji FROM countries`
       }else{
-        console.log("lp");
         const connection = await pool.getConnection();
         const [rows] = await connection.execute(query);
         connection.release();        
@@ -26,10 +24,8 @@ export async function POST(request: Request) {
       const query = 'SELECT `id`,`name`,`iso3`,`phonecode`,`currency`,`currency_symbol`,`emoji` FROM countries WHERE name='+name;
       let res 
       if(process.env.NODE_ENV){
-        console.log("sp");
         res = await sql`${query}`
       }else{
-        console.log("lp");
         const connection = await pool.getConnection();
         const [res] = await connection.execute(query);
         connection.release();
