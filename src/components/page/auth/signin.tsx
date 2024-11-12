@@ -21,9 +21,6 @@ const SignInUI = () => {
                 router.replace("/")
             }else{
                 message.error(r?.error)
-                // if("User does not exist"== r?.error){
-                //     router.push("/auth/signup")
-                // }
             }
         }).catch((err)=> {
             console.log("err ", err.message);            

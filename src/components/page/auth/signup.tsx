@@ -113,7 +113,7 @@ const SignUpUI = () => {
         <Form.Item className='mb-2' label="Password" name={"password"} 
           rules={[{required:true},
             {
-              pattern:/^(?=.*[0-9])(?=.*[a-zA-Z])(?=.*[!&#$%\-_=+<>])([a-zA-Z0-9!#$%\-_=+<>]+)$/,
+              pattern:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
               message: `Password should contain at least one lower case letter, upper case letter, number and special characters`
            },
            {min:8,max:16,message: "Passwords must be between 8 to 16 characters"}

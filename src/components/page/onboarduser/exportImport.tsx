@@ -482,8 +482,8 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     </Row>
                 </Form.Item>
                 <Row gutter={[48, 0]}>
-                    <Col span={24} >
-                        <Form.Item name={"aeo"} label="AEO Certificate">
+                    <Col sm={24} md={12} lg={12} >
+                        <Form.Item name={"aeo"} label="AEO Certificate" layout="horizontal">
                             <Radio.Group optionType="default">
                                 <Radio.Button value="Yes">Yes</Radio.Button>
                                 <Radio.Button value="No">No</Radio.Button>
@@ -491,13 +491,13 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                         </Form.Item>
                     </Col>
                     {AEO === "Yes" &&
-                        <Col {...responsiveItemLayout} >
-                            <CustomFormUpload required style f={form} label={false} name={"aeoCopy"} />
+                        <Col sm={24} md={12} lg={12} >
+                            <CustomFormUpload  required style f={form} label={""} name={"aeoCopy"} />
                         </Col>
                     }
                 </Row>
                 <Row gutter={[48, 0]}>
-                    <Col span={24} >
+                    <Col sm={24} md={12} lg={12} >
                         <Form.Item name={"SEHC"} label="Star Export House Certification">
                             <Radio.Group optionType="default">
                                 <Radio.Button value="Yes">Yes</Radio.Button>
@@ -507,7 +507,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     </Col>
                     {SEHC === "Yes" &&
                         <>
-                            <Col span={24} >
+                            <Col sm={24} md={12} lg={12} >
                                 <Form.Item name={"starExportHouseRating"} label="Star Export House Certification">
                                     <Rate />
                                 </Form.Item>
@@ -762,7 +762,7 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
                         label="Name [Point of Contact/EXIM/Logistics Team]"
                         rules={[{required:true}]}
                       >
-                        <Input placeholder="Enter Name" />
+                        <Select showSearch={false} notFoundContent={<></>} placeholder="Enter Name" mode="tags"/>
                       </FormItem>
                     </Col>
                     <Col {...responsiveItemLayout}>
