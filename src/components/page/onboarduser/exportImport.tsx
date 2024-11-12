@@ -4,19 +4,20 @@ import { Form, Input, Checkbox, Select, InputNumber, Button, Space, Layout, Step
 import Sider from 'antd/es/layout/Sider';
 import { Content } from 'antd/es/layout/layout';
 import OnboardUserUI from './layout';
-import { assetsRootPath, validateMessages } from '@/components/utils';
+import { assetsRootPath, getCountryId, validateMessages } from '@/components/utils';
 import {  UploadOutlined,} from '@ant-design/icons';
 import { getCountry, getCountryFromName, getOrg, getUser, signUPEndPoint2, signUPEndPoint3, signUPEndPoint4 } from '@/network/endpoints';
 import UnAuthHOC, { AuthHOC } from '@/components/supportcomponents/auth/UnAuthHOC';
 import { FormInstance, useWatch } from 'antd/es/form/Form';
 import FormItem from 'antd/es/form/FormItem';
 import { hashCountry } from '@/components/utils/hashcountry';
-import StateSelect, { CitySelect, CitySelectV2, StateSelectV2 } from '@/components/supportcomponents/customcomponents/stateselect';
+import StateSelect, { CitySelect, CitySelectV2, CitySelectV3, StateSelectV2, StateSelectV4 } from '@/components/supportcomponents/customcomponents/stateselect';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { CountryListType } from '@/types/defaults';
 import { CustomFormUpload } from './freightforwader';
 import { FormRules } from '@/components/strings';
+import { abort } from 'process';
 
 const ExportImportUI = () => {
     const [currentStep, setCurrentStep] = useState<number>(0)
@@ -109,6 +110,7 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
     const [stateId, setStateId] = useState("")
     const [Currency, setCurrency] = useState("₹")
     const [org, setOrg] = useState(null);
+
     const handleCountrySelect = (e: any) => {
         setCountryId((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].id)
         setCurrency((countryList ? countryList : []).filter((state: any) => state.desc === e)[0].currency_symbol)
@@ -124,11 +126,16 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
           if(fetchedOrg.code){
             setOrg(fetchedOrg.data);
             setCountryId(hashCountry[fetchedOrg.data.country].id)
+          }else{
+            let c = fetchedOrg1?.data?.user?.countryCode==91
+            if(fetchedOrg1.code &&c){
+                console.log("tl");
+                setCountryId(`101`)
+            }
           }
         };
         fetchData();
       }, []);
-    // Simulate fetching country options (replace with actual API call)
     useEffect(() => {
         const fetchCountries = async () => {
             const response = await getCountry() 
@@ -176,7 +183,6 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
     useEffect(()=>{
         getOrg()
         .then(r=>{
-            console.log(r.data);
             if(r.code){
                 form.setFieldsValue({
                     companyName: r.data.companyName,
@@ -347,8 +353,8 @@ const KYCForm = ({ setCurrentStep }: {setCurrentStep: Dispatch<SetStateAction<nu
 const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Dispatch<SetStateAction<number>> }) => {
     const { push } = useRouter()
     const [form] = Form.useForm();
-    const AEO = useWatch("AEO", { form });
-    const SEHC = useWatch("SEHC", { form });
+    const AEO = useWatch("aeo", form);
+    const SEHC = useWatch("SEHC", form);
     const {data, error,isLoading} = useSWR("/?"+step,getUser)
 
     const onFinish = (values: any) => {
@@ -415,7 +421,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
             
         })
     },[])
-
+    
     return (
         <Form {...layout} validateMessages={validateMessages} layout="vertical" form={form} onFinish={onFinish} onFinishFailed={onFinishFailed}>
             {/* Upload KYC Documents - India */}
@@ -487,7 +493,8 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
                     {AEO === "Yes" &&
                         <Col {...responsiveItemLayout} >
                             <CustomFormUpload required style f={form} label={false} name={"aeoCopy"} />
-                        </Col>}
+                        </Col>
+                    }
                 </Row>
                 <Row gutter={[48, 0]}>
                     <Col span={24} >
@@ -532,7 +539,7 @@ const KYCUploadForm = ({ setCurrentStep ,step}: {step:number, setCurrentStep: Di
 
 const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
     const [fileList, setFileList] = useState([]);
-    const AEO = useWatch("AEO", { form:f });
+    const AEO = useWatch("aeo", { form:f });
     useEffect(()=>{
         getOrg()
         .then(r=>{
@@ -573,7 +580,7 @@ const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
             </Row>
             <Row gutter={16}>
                 <Col xs={24} sm={24} md={12} lg={12}>
-                    <CustomFormUpload required style f={f} name={"ProofBusinessAddress"} label={"Proof of business address (Utility Bill/Lease agreement)"} />
+                    <CustomFormUpload required style f={f} name={"proofOfBussinessAddressCopy"} label={"Proof of business address (Utility Bill/Lease agreement)"} />
                 </Col>
                 <Col xs={24} sm={24} md={12} lg={12}>
                     <CustomFormUpload required style f={f} name={"chamberOfCommerceTradeAssociation"} label={"Chamber of Commerce / Trade Association certificate"} />
@@ -590,7 +597,7 @@ const KYCUploadFormGlobal = ({ f }: { f: FormInstance<any> }) => {
                     </Col>
                     {AEO === "Yes" &&
                         <Col {...responsiveItemLayout} >
-                            <CustomFormUpload required style f={f} label={""} name={"aeo"} />
+                            <CustomFormUpload required style f={f} label={""} name={"aeoCopy"} />
                         </Col>}
                 </Row>
         </div>
@@ -605,6 +612,10 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
     const [countryId, setCountryId] = useState("");
     const [stateId, setStateId] = useState("")
     const [dataList,setDataList] = useState<any>([{}])
+
+    const branches = useWatch("branches",form)
+
+
     const [countryList, setCountryList] = useState<CountryListType[]>([])
     const handleCountrySelect = (e: any,index:number) => {
         
@@ -629,7 +640,6 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
     }, []);
 
     const onFinish = (value:any) => {
-        console.log(value);
         let errors:string[] = []
         value.branches.forEach((i:any,index:number)=>{
             i.contactPersonEmail.forEach((element:string) => {
@@ -645,11 +655,7 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
                 }
               })
         });
-        dataList.forEach((element:any) => {
-            if(!element?.state || !element.city){
-                errors.push("State and City are required")
-            }
-        })
+        
         if(errors.length>0){
           errors.forEach((i=>message.error(i)))
           return
@@ -666,8 +672,6 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
         
         
     }
-    console.log(dataList);
-    
     useEffect(() => {
       const fetchData = async () => {
         const fetchedOrg = await getOrg();
@@ -685,7 +689,9 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
             if(r.code){
                 
                 if((r.data?.branches?r.data?.branches:[]).length>0){
+                    console.log(r.data.branches);
                     form.setFieldValue("branches",r.data.branches)
+                    
                 }else{
                     form.setFieldValue("branches",[{}])
                 }
@@ -702,11 +708,11 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
           {(fields, { add, remove }) => (
             <>
               {fields.map((field,index) => (
-                <Card key={field.key+1} title={`Branch ${index+1}`} className='my-2' extra={field.key>0&&<Button onClick={()=>{remove(field.key),setDataList((i:any)=>i.filter((i:any,iIndex:number)=>iIndex!==index))}} shape="round">Delete <span className='text-danger'>X</span> </Button>}>
+                <Card key={field.key+1} title={`Branch ${index+1}`} className='my-2' extra={field.key>0&&<Button onClick={()=>{remove(index),setDataList((i:any)=>i.filter((i:any,iIndex:number)=>iIndex!==index))}} shape="round">Delete <span className='text-danger'>X</span> </Button>}>
                   
                   <Row gutter={16}>
                     <Col sm={24} md={24} lg={8}>
-                        <Form.Item label="Country" rules={[{ required: true,  }]}>
+                        <Form.Item label="Country" name={[index,"country"]} rules={[{ required: true,  }]}>
                             <Select
                                 showSearch
                                 allowClear
@@ -722,24 +728,23 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
                         </Form.Item>
                     </Col>
                     <Col sm={24} md={12} lg={8}>
-                      <StateSelectV2
-                        props={{...field}}
-                        name={index}
-                        label="Select Branch State/Province"
-                        countryId={hashCountry[dataList[index]?.country]?.id}
-                        f={setDataList} 
-                        onChange={(e:any)=>setStateId(e)}
-                      />
+                      <Form.Item name={[index,"state"]} rules={[{required:true}]} label="Select Branch State/Province">
+                            <StateSelectV4
+                                countryId={`${getCountryId(branches?.[index]?.country)}`}
+                                onChange={(e:any,a:any)=>{setStateId(a.key),form.setFieldValue(["branches",index,"city"],undefined)}}
+                            />
+                      </Form.Item>
                     </Col>
                     <Col sm={24} md={12} lg={8}>
-                    <CitySelectV2
-                        props={{...field}}
-                        name={index}
-                        label="Select City"
-                        stateId={dataList[index]?.stateId}
-                        f={setDataList}
-                        onChange={(v:string)=>form.setFieldValue(["branches",field.name,"city"],v)} />
-                    </Col>                  
+                            <CitySelectV3
+                                stateId={branches?.[index]?.state}
+                                name={[index,"city"]}             
+                                f={()=>{}}
+                                onChange={()=>{}}
+                                required
+                                label='Select City'
+                            />
+                    </Col>               
                     <Col {...responsiveItemLayout}>
                       <FormItem
                         {...field}
@@ -795,7 +800,7 @@ export  const BranchDetailsForm = ({ setCurrentStep,title ,currentStep}: {curren
           )}
         </Form.List>
         <Form.Item className='mx-5 px-2'>
-            <Button block type="primary" shape="round" htmlType="submit">Submit</Button>
+            <Button onClick={()=>form.submit()} block type="primary" shape="round">Submit</Button>
         </Form.Item>
       </Form>
     );

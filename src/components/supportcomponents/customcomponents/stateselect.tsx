@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Select, InputNumber, FormInstance } from 'antd';
 import useSWR from 'swr';
-import { getCity, getCountry, getStates } from '@/network/endpoints';
+import { getCity, getCityV2, getCountry, getStates } from '@/network/endpoints';
 import { useWatch } from 'antd/es/form/Form';
 
 export const CountrySelect = ({ name, onChange, f ,required=false,...props}:{required?:boolean,props?:any,name:any, onChange:any, f:FormInstance<any>}) => {
@@ -32,12 +32,16 @@ export const CountrySelect = ({ name, onChange, f ,required=false,...props}:{req
     </Form.Item>
   );
 };
-export const CountrySelectV2 = ({onChange,...props}:{props?:any,onChange:any}) => {
+export const CountrySelectV2 = ({onChange,all=false,...props}:{all?:boolean,props?:any,onChange:any}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
   const { data, error } = useSWR( "/",getCountry,{dedupingInterval:5000*60});
 
   useEffect(() => {
     if (data && data.data) {
+      if(all){
+        setStates([...[{name: "Any",id: "All"}],...data.data])
+        return
+      }
       setStates(data.data);
     }
     
@@ -167,7 +171,6 @@ export const CitySelect = ({ name, label, stateId, onChange,f ,...props}:{props?
 
   const handleChange = (value:any) => {
     f.setFieldValue(name, value)
-           
   };
 
   return (
@@ -210,11 +213,11 @@ export const CitySelectV2 = ({ name, label, stateId, onChange,f ,props}:{props?:
 };
 export const CitySelectV3 = ({ name, label, stateId, onChange,f ,required=false,props}:{required?:boolean,props?:any,name:any, label:string, stateId:string,onChange:any, f:any}) => {
   const [states, setStates] = useState<{name:string,id:string}[]>([]);
-  const { data, error } = useSWR(stateId?stateId:null, getCity,{dedupingInterval:5000*60});
+  const { data, error } = useSWR(stateId?stateId:null, getCityV2,{dedupingInterval:5000*60});
   const city = useWatch(name,f)
   
   useEffect(() => {
-      
+
   }, [city]);
 
   useEffect(() => {
@@ -228,7 +231,7 @@ export const CitySelectV3 = ({ name, label, stateId, onChange,f ,required=false,
   };
 
   return (
-    <Form.Item name={name} rules={[{ required }]}>
+    <Form.Item name={name} label={label?label:""} rules={[{ required }]}>
       <Select showSearch onChange={handleChange} placeholder="Select City"
         options={states.map(state => ({label:state.name, value:state.name,key:state.id}))}
       />
